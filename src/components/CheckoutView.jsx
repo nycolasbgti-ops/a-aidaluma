@@ -4,10 +4,10 @@ import { supabase } from '../supabaseClient'
 const fmt = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`
 
 const PAYMENT_OPTIONS = [
-  { value: 'pix',    label: '💠 Pix',      desc: 'Instantâneo e sem taxa' },
-  { value: 'credit', label: '💳 Crédito',  desc: 'À vista ou parcelado' },
-  { value: 'debit',  label: '💳 Débito',   desc: 'Na entrega / retirada' },
-  { value: 'cash',   label: '💵 Dinheiro', desc: 'Troco disponível' },
+  { value: 'pix',    label: '💠 Pix' },
+  { value: 'credit', label: '💳 Crédito' },
+  { value: 'debit',  label: '💳 Débito' },
+  { value: 'cash',   label: '💵 Dinheiro' },
 ]
 
 export default function CheckoutView({ cart, total, onBack, onConfirm }) {
@@ -196,7 +196,6 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
                 }`}
               >
                 <p className="font-semibold text-sm">{opt.label}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
               </button>
             ))}
           </div>
