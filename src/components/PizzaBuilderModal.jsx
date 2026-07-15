@@ -11,7 +11,9 @@ export default function PizzaBuilderModal({ pizza, allPizzas, onClose, onAdd }) 
   const price1 = getPrice(pizza.prices, null)
   const price2 = secondHalf ? getPrice(secondHalf.prices, null) : 0
 
-  const basePrice  = mode === 'half' && secondHalf ? Math.max(price1, price2) : price1
+  const basePrice  = mode === 'half' && secondHalf
+    ? Math.round((price1 + price2) / 2 * 100) / 100
+    : price1
   const crustPrice = CRUST_FLAVORS.find(f => f.key === crustFlavor)?.price ?? 0
   const unitPrice  = basePrice + crustPrice
   const total      = unitPrice * qty
@@ -172,7 +174,7 @@ export default function PizzaBuilderModal({ pizza, allPizzas, onClose, onAdd }) 
               {secondHalf && (
                 <div className="mt-3 bg-[#D4AF37]/8 border border-[#D4AF37]/20 rounded-xl px-4 py-2.5">
                   <p className="text-xs text-[#D4AF37] text-center">
-                    💡 Preço = sabor mais caro: <strong>{fmt(Math.max(price1, price2))}</strong>
+                    💡 Preço = média dos sabores: <strong>{fmt(Math.round((price1 + price2) / 2 * 100) / 100)}</strong>
                   </p>
                 </div>
               )}

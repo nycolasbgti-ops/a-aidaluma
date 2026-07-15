@@ -31,6 +31,23 @@ const uploadImage = async (file) => {
 const EMPTY_CAT  = { name: '', icon: '🍕', order_position: 0, is_pizza: false }
 const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', priceM: '', priceG: '', image_url: '', active: true, order_position: 0 }
 
+// ── Currency mask helpers ─────────────────────────────────────
+const formatCurrency = (cents) => {
+  const int = Math.floor(cents / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const dec = (cents % 100).toString().padStart(2, '0')
+  return `${int},${dec}`
+}
+
+const parseCurrency = (display) => {
+  const digits = String(display || '').replace(/\D/g, '')
+  return digits ? parseInt(digits, 10) / 100 : 0
+}
+
+const toDisplayPrice = (value) => {
+  if (value === '' || value == null) return ''
+  return formatCurrency(Math.round(Number(value) * 100))
+}
+
 // ── Sub-components ────────────────────────────────────────────
 
 function SectionTitle({ children }) {
@@ -131,10 +148,10 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
       description:  initial.description || '',
       category_id:  initial.category_id,
       priceType:    hasSized ? 'sized' : 'unique',
-      priceUnique:  initial.prices?.unique ?? '',
-      priceP:       initial.prices?.P ?? '',
-      priceM:       initial.prices?.M ?? '',
-      priceG:       initial.prices?.G ?? '',
+      priceUnique:  toDisplayPrice(initial.prices?.unique),
+      priceP:       toDisplayPrice(initial.prices?.P),
+      priceM:       toDisplayPrice(initial.prices?.M),
+      priceG:       toDisplayPrice(initial.prices?.G),
       image_url:    initial.image_url || '',
       active:       initial.active ?? true,
       order_position: initial.order_position ?? 0,
@@ -143,6 +160,12 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
 
   const [form, setForm] = useState(initForm)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handlePriceChange = (key) => (e) => {
+    const digits = e.target.value.replace(/\D/g, '')
+    if (!digits) { set(key, ''); return }
+    set(key, formatCurrency(parseInt(digits, 10)))
+  }
 
   const selectedCat = categories.find(c => c.id === form.category_id)
 
@@ -206,8 +229,9 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
         </div>
 
         {form.priceType === 'unique' ? (
-          <input type="number" value={form.priceUnique} onChange={e => set('priceUnique', e.target.value)}
-            placeholder="0,00" step="0.01" min="0" className={inputCls} />
+          <input type="text" inputMode="numeric" value={form.priceUnique}
+            onChange={handlePriceChange('priceUnique')}
+            placeholder="0,00" className={inputCls} />
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -217,8 +241,9 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
             ].map(({ key, label }) => (
               <div key={key}>
                 <label className="text-[11px] text-gray-500 block mb-1">{label}</label>
-                <input type="number" value={form[key]} onChange={e => set(key, e.target.value)}
-                  placeholder="0,00" step="0.01" min="0"
+                <input type="text" inputMode="numeric" value={form[key]}
+                  onChange={handlePriceChange(key)}
+                  placeholder="0,00"
                   className="w-full bg-[#242424] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:ring-2 focus:ring-[#FF3B30] transition-all placeholder-gray-600" />
               </div>
             ))}
@@ -386,11 +411,11 @@ export default function MenuManager() {
     setError('')
     try {
       const prices = form.priceType === 'unique'
-        ? { unique: parseFloat(form.priceUnique) || 0 }
+        ? { unique: parseCurrency(form.priceUnique) }
         : {
-            P: parseFloat(form.priceP) || 0,
-            M: parseFloat(form.priceM) || 0,
-            G: parseFloat(form.priceG) || 0,
+            P: parseCurrency(form.priceP),
+            M: parseCurrency(form.priceM),
+            G: parseCurrency(form.priceG),
           }
 
       const cat = categories.find(c => c.id === form.category_id)
