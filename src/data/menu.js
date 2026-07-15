@@ -10,6 +10,8 @@ export const CRUST_FLAVORS = [
 
 export const ADMIN_PIN = '1234'
 
+export const PIX_KEY = 'CHAVE_PIX_AQUI'
+
 export const categories = [
   { id: 'pizzas',      name: 'Pizzas',      icon: '🍕' },
   { id: 'bebidas',     name: 'Bebidas',     icon: '🥤' },
