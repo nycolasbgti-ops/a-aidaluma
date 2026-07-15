@@ -29,7 +29,7 @@ const uploadImage = async (file) => {
 }
 
 const EMPTY_CAT  = { name: '', icon: '🍕', order_position: 0, is_pizza: false }
-const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', priceM: '', priceG: '', is_sweet: false, image_url: '', active: true, order_position: 0 }
+const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', priceM: '', priceG: '', image_url: '', active: true, order_position: 0 }
 
 // ── Sub-components ────────────────────────────────────────────
 
@@ -135,7 +135,6 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
       priceP:       initial.prices?.P ?? '',
       priceM:       initial.prices?.M ?? '',
       priceG:       initial.prices?.G ?? '',
-      is_sweet:     initial.is_sweet,
       image_url:    initial.image_url || '',
       active:       initial.active ?? true,
       order_position: initial.order_position ?? 0,
@@ -226,18 +225,6 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
           </div>
         )}
       </div>
-
-      {/* is_sweet — só para categorias de pizza */}
-      {selectedCat?.is_pizza && (
-        <div className="bg-[#242424] rounded-xl p-4">
-          <ToggleRow
-            label="Pizza Doce 🍰"
-            sub="Impede combinação com pizzas salgadas no Meio a Meio"
-            value={form.is_sweet}
-            onChange={v => set('is_sweet', v)}
-          />
-        </div>
-      )}
 
       {/* Upload de imagem */}
       <div>
@@ -406,12 +393,15 @@ export default function MenuManager() {
             G: parseFloat(form.priceG) || 0,
           }
 
+      const cat = categories.find(c => c.id === form.category_id)
+      const is_sweet = /doces?/i.test(cat?.name || '')
+
       const payload = {
         category_id:    form.category_id,
         name:           form.name.trim(),
         description:    form.description.trim() || null,
         prices,
-        is_sweet:       form.is_sweet,
+        is_sweet,
         image_url:      form.image_url || null,
         active:         form.active,
         order_position: parseInt(form.order_position) || 0,
