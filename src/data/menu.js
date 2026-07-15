@@ -1,7 +1,3 @@
-// Número do WhatsApp da pizzaria (formato internacional, sem + ou espaços)
-// Ex.: 5511999999999 para (11) 99999-9999
-export const WHATSAPP_NUMBER = 'COLOQUE_SEU_NUMERO_AQUI'
-
 export const CRUST_FLAVORS = [
   { key: 'none',     label: 'Sem borda',         price: 0 },
   { key: 'catupiry', label: 'Borda de Catupiry', price: 6 },
@@ -9,8 +5,6 @@ export const CRUST_FLAVORS = [
 ]
 
 export const ADMIN_PIN = '1234'
-
-export const PIX_KEY = 'CHAVE_PIX_AQUI'
 
 export const categories = [
   { id: 'pizzas',      name: 'Pizzas',      icon: '🍕' },

@@ -302,11 +302,95 @@ function OrdersPanel() {
   )
 }
 
+// ── Settings panel ────────────────────────────────────────────
+
+function SettingsPanel() {
+  const [form,    setForm]    = useState({ pix_key: '', whatsapp_number: '' })
+  const [loading, setLoading] = useState(true)
+  const [saving,  setSaving]  = useState(false)
+  const [saved,   setSaved]   = useState(false)
+  const [error,   setError]   = useState('')
+
+  useEffect(() => {
+    supabase.from('settings').select('pix_key, whatsapp_number').eq('id', 1).single()
+      .then(({ data, error: e }) => {
+        if (e) setError(e.message)
+        else if (data) setForm({ pix_key: data.pix_key || '', whatsapp_number: data.whatsapp_number || '' })
+        setLoading(false)
+      })
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaved(false)
+    setError('')
+    const { error: e } = await supabase.from('settings')
+      .update({ pix_key: form.pix_key.trim(), whatsapp_number: form.whatsapp_number.trim() })
+      .eq('id', 1)
+    setSaving(false)
+    if (e) setError(e.message)
+    else { setSaved(true); setTimeout(() => setSaved(false), 3000) }
+  }
+
+  const inputCls = 'w-full bg-[#242424] rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm font-mono'
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <div className="w-6 h-6 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-lg font-bold mb-1">Configurações</h3>
+        <p className="text-xs text-gray-500">Alterações entram em vigor imediatamente para todos os clientes.</p>
+      </div>
+
+      {error && <p className="text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2">{error}</p>}
+
+      <div className="bg-[#1A1A1A] rounded-2xl p-4">
+        <label className="text-xs text-[#D4AF37] font-semibold uppercase tracking-widest block mb-2">💠 Chave Pix</label>
+        <input
+          type="text"
+          value={form.pix_key}
+          onChange={e => setForm(f => ({ ...f, pix_key: e.target.value }))}
+          placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+          className={inputCls}
+        />
+      </div>
+
+      <div className="bg-[#1A1A1A] rounded-2xl p-4">
+        <label className="text-xs text-[#D4AF37] font-semibold uppercase tracking-widest block mb-2">📱 Número do WhatsApp</label>
+        <input
+          type="text"
+          value={form.whatsapp_number}
+          onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))}
+          placeholder="5511999999999"
+          className={inputCls}
+        />
+        <p className="text-xs text-gray-600 mt-2">Formato internacional sem + ou espaços. Ex.: 5511999999999</p>
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className={`w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 ${
+          saved ? 'bg-green-500 text-white' : 'bg-[#D4AF37] text-[#0A0A0A] shadow-md shadow-[#D4AF37]/30'
+        }`}
+      >
+        {saving ? 'Salvando...' : saved ? '✓ Salvo com sucesso!' : 'Salvar Configurações'}
+      </button>
+    </div>
+  )
+}
+
 // ── AdminPanel root ───────────────────────────────────────────
 
 const MAIN_TABS = [
-  { key: 'orders', label: '📋 Pedidos' },
-  { key: 'menu',   label: '🍕 Cardápio' },
+  { key: 'orders',   label: '📋 Pedidos'       },
+  { key: 'menu',     label: '🍕 Cardápio'      },
+  { key: 'settings', label: '⚙️ Configurações' },
 ]
 
 export default function AdminPanel({ onBack }) {
@@ -338,7 +422,7 @@ export default function AdminPanel({ onBack }) {
         <div className="flex-1">
           <h1 className="text-lg font-bold leading-tight">Painel da Pizzaria</h1>
           <p className="text-xs text-gray-500">
-            {mainTab === 'orders' ? 'Pedidos em tempo real' : 'Gerenciar cardápio'}
+            {{ orders: 'Pedidos em tempo real', menu: 'Gerenciar cardápio', settings: 'Chave Pix e WhatsApp' }[mainTab]}
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -371,6 +455,10 @@ export default function AdminPanel({ onBack }) {
       {mainTab === 'orders' ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           <OrdersPanel />
+        </div>
+      ) : mainTab === 'settings' ? (
+        <div className="flex-1 overflow-y-auto px-4 py-5 max-w-lg mx-auto w-full pb-10">
+          <SettingsPanel />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-4 py-5 max-w-lg mx-auto w-full pb-10">

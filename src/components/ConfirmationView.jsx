@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { WHATSAPP_NUMBER, PIX_KEY } from '../data/menu'
+import { supabase } from '../supabaseClient'
 
 const fmt = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
 
@@ -31,21 +31,24 @@ function buildWAMessage(order) {
 }
 
 export default function ConfirmationView({ order, onNewOrder }) {
-  const [tick,   setTick]   = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [tick,     setTick]     = useState(false)
+  const [copied,   setCopied]   = useState(false)
+  const [settings, setSettings] = useState({ pix_key: '', whatsapp_number: '' })
 
   useEffect(() => {
     const t = setTimeout(() => setTick(true), 100)
+    supabase.from('settings').select('pix_key, whatsapp_number').eq('id', 1).single()
+      .then(({ data }) => { if (data) setSettings(data) })
     return () => clearTimeout(t)
   }, [])
 
   const handleWA = () => {
     const msg = buildWAMessage(order)
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank', 'noopener')
+    window.open(`https://wa.me/${settings.whatsapp_number}?text=${msg}`, '_blank', 'noopener')
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(PIX_KEY)
+    navigator.clipboard.writeText(settings.pix_key)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -102,7 +105,7 @@ export default function ConfirmationView({ order, onNewOrder }) {
             <p className="text-xs font-semibold text-[#D4AF37] uppercase tracking-widest mb-3">Chave Pix</p>
             <div className="flex items-center gap-2 mb-2.5">
               <p className="flex-1 font-mono text-sm bg-[#242424] rounded-xl px-3 py-2.5 text-white truncate select-all">
-                {PIX_KEY}
+                {settings.pix_key || '—'}
               </p>
               <button
                 onClick={handleCopy}
