@@ -23,6 +23,13 @@ export default function App() {
   const [showAdminLogin, setAdminLogin]    = useState(false)
   const [adminAuthed,    setAdminAuthed]   = useState(false)
 
+  // Link secreto: ?admin na URL abre o login sem botão visível na interface
+  useEffect(() => {
+    if (window.location.search.includes('admin')) {
+      setAdminLogin(true)
+    }
+  }, [])
+
   // Seleciona a primeira categoria quando os dados chegam
   useEffect(() => {
     if (categories.length > 0 && !activeCatId) {
@@ -74,11 +81,6 @@ export default function App() {
     }
   }
 
-  const handleAdminClick = () => {
-    if (adminAuthed) { setView('admin'); return }
-    setAdminLogin(true)
-  }
-
   const handleAdminLogin = (pin) => {
     if (pin === ADMIN_PIN) {
       setAdminAuthed(true)
@@ -114,7 +116,6 @@ export default function App() {
         cartCount={cartCount}
         cartTotal={cartTotal}
         onCartClick={() => setCartOpen(true)}
-        onAdminClick={handleAdminClick}
       />
 
       {loading ? (
