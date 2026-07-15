@@ -27,7 +27,113 @@ function timeAgo(iso) {
   return `${Math.floor(diff / 3600)}h atrás`
 }
 
-function OrderCard({ order, onAdvance }) {
+function buildComanda(order) {
+  const sep = '================================'
+  const div = '--------------------------------'
+  const id4 = String(order.id || '').slice(-4)
+  const pay = PAYMENT_LABELS[order.payment_method] || order.payment_method
+
+  const itemLines = (order.items || []).flatMap(item => {
+    const line = [`${item.qty || 1}x ${item.name}`]
+    if (item.crustLabel) line.push(`  Borda: ${item.crustLabel}`)
+    return line
+  }).join('\n')
+
+  const parts = [
+    sep,
+    '        PIZZARIA IMPÉRIO',
+    sep,
+    `Pedido: #${id4}`,
+    '',
+    'Cliente:',
+    order.customer_name,
+    '',
+    'Telefone:',
+    order.customer_phone,
+  ]
+
+  if (order.address) parts.push('', 'Endereço:', order.address)
+
+  parts.push(div, itemLines)
+
+  if (order.notes) parts.push('', 'Observação:', order.notes)
+
+  parts.push(div, `Total: ${fmt(order.total)}`, '', 'Forma de pagamento:', pay, sep)
+
+  return parts.join('\n')
+}
+
+function PrintModal({ order, onClose }) {
+  const [text, setText] = React.useState(() => buildComanda(order))
+
+  const handlePrint = () => {
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const win = window.open('', '_blank', 'width=420,height=640')
+    win.document.write(
+      `<!DOCTYPE html><html><head><title>Comanda #${String(order.id || '').slice(-4)}</title>` +
+      `<style>@media print{body{margin:0}}body{margin:8px}</style></head><body>` +
+      `<pre style="font-family:monospace;font-size:14px;white-space:pre-wrap">${escaped}</pre>` +
+      `<script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}<\/script>` +
+      `</body></html>`
+    )
+    win.document.close()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div className="bg-[#1A1A1A] rounded-2xl w-full max-w-sm flex flex-col max-h-[90vh]">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0">
+          <div>
+            <p className="font-bold text-base">🖨️ Imprimir Comanda</p>
+            <p className="text-xs text-gray-500 mt-0.5">Edite antes de imprimir se necessário</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 bg-[#242424] rounded-full flex items-center justify-center text-gray-400 text-sm active:scale-95 transition-all"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Textarea */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={14}
+            spellCheck={false}
+            className="w-full bg-[#242424] rounded-xl px-3 py-3 font-mono text-xs text-gray-200
+                       outline-none focus:ring-2 focus:ring-[#D4AF37] resize-none leading-relaxed
+                       transition-all"
+          />
+        </div>
+
+        {/* Ações */}
+        <div className="flex gap-3 px-4 pb-5 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3.5 bg-[#242424] rounded-2xl text-sm font-semibold text-gray-400
+                       active:scale-95 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex-1 py-3.5 bg-[#D4AF37] text-[#0A0A0A] rounded-2xl text-sm font-bold
+                       active:scale-95 transition-all shadow-md shadow-[#D4AF37]/30
+                       flex items-center justify-center gap-2"
+          >
+            🖨️ Confirmar Impressão
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OrderCard({ order, onAdvance, onPrint }) {
   const cfg  = STATUS[order.status] ?? STATUS.new
   const [busy, setBusy] = useState(false)
 
@@ -81,13 +187,22 @@ function OrderCard({ order, onAdvance }) {
         </div>
       )}
 
-      {cfg.next && (
-        <button onClick={advance} disabled={busy}
-          className="w-full py-3 bg-[#D4AF37] rounded-xl font-bold text-sm text-[#0A0A0A]
-                     active:scale-[0.97] transition-all disabled:opacity-50 shadow-md shadow-[#D4AF37]/30">
-          {busy ? '...' : cfg.nextBtn}
+      <div className="flex gap-2">
+        <button
+          onClick={() => onPrint(order)}
+          className="flex-1 py-3 bg-[#242424] rounded-xl text-sm font-semibold text-gray-300
+                     active:scale-[0.97] transition-all flex items-center justify-center gap-1.5"
+        >
+          🖨️ Imprimir
         </button>
-      )}
+        {cfg.next && (
+          <button onClick={advance} disabled={busy}
+            className="flex-1 py-3 bg-[#D4AF37] rounded-xl font-bold text-sm text-[#0A0A0A]
+                       active:scale-[0.97] transition-all disabled:opacity-50 shadow-md shadow-[#D4AF37]/30">
+            {busy ? '...' : cfg.nextBtn}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -95,10 +210,11 @@ function OrderCard({ order, onAdvance }) {
 // ── Pedidos panel ─────────────────────────────────────────────
 
 function OrdersPanel() {
-  const [orders,    setOrders]    = useState([])
-  const [activeTab, setActiveTab] = useState('new')
-  const [loading,   setLoading]   = useState(true)
-  const [connOk,    setConnOk]    = useState(true)
+  const [orders,      setOrders]      = useState([])
+  const [activeTab,   setActiveTab]   = useState('new')
+  const [loading,     setLoading]     = useState(true)
+  const [connOk,      setConnOk]      = useState(true)
+  const [printModal,  setPrintModal]  = useState(null)
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -156,6 +272,8 @@ function OrdersPanel() {
         ))}
       </div>
 
+      {printModal && <PrintModal order={printModal} onClose={() => setPrintModal(null)} />}
+
       <div className="flex-1 overflow-y-auto px-4 py-4 max-w-lg mx-auto w-full">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -177,7 +295,7 @@ function OrdersPanel() {
             <p className="text-gray-500 font-medium">Nenhum pedido aqui</p>
           </div>
         ) : (
-          filtered.map(order => <OrderCard key={order.id} order={order} onAdvance={handleAdvance} />)
+          filtered.map(order => <OrderCard key={order.id} order={order} onAdvance={handleAdvance} onPrint={setPrintModal} />)
         )}
       </div>
     </>
