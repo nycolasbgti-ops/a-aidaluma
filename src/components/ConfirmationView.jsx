@@ -16,7 +16,7 @@ function buildWAMessage(order) {
   }).join('\n')
 
   return encodeURIComponent(
-    `🍕 *Pedido Confirmado — Bella Pizza!*\n` +
+    `🍕 *Pedido Confirmado — Pizzaria Império!*\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
     `👤 *Cliente:* ${order.customer_name}\n` +
     `📱 *Telefone:* ${order.customer_phone}\n` +
