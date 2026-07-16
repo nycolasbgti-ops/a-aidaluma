@@ -2,7 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../supabaseClient'
 import MenuManager from './MenuManager'
 
+const N8N_WEBHOOK_URL = 'http://179.197.78.71:5678/webhook/saiu-entrega'
+
 const fmt = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
+
+function formatPhone(raw) {
+  const digits = String(raw || '').replace(/\D/g, '')
+  return digits.startsWith('55') ? digits : `55${digits}`
+}
 
 const STATUS = {
   new:        { label: 'Novo',            icon: '🆕', bg: 'bg-blue-500',   next: 'preparing',  nextBtn: 'Iniciar Preparo'  },
@@ -140,7 +147,7 @@ function OrderCard({ order, onAdvance, onPrint }) {
   const advance = async () => {
     if (!cfg.next || busy) return
     setBusy(true)
-    await onAdvance(order.id, cfg.next)
+    await onAdvance(order, cfg.next)
     setBusy(false)
   }
 
@@ -242,9 +249,27 @@ function OrdersPanel() {
     return () => { supabase.removeChannel(ch) }
   }, [fetchOrders])
 
-  const handleAdvance = async (id, status) => {
-    const { error } = await supabase.from('orders').update({ status }).eq('id', id)
-    if (!error) setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o))
+  const handleAdvance = async (order, status) => {
+    const { error } = await supabase.from('orders').update({ status }).eq('id', order.id)
+    if (!error) {
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status } : o))
+
+      if (status === 'delivering') {
+        const pedido = (order.items || [])
+          .map(item => `${item.qty || 1}x ${item.name}${item.crustLabel ? ` + ${item.crustLabel}` : ''}`)
+          .join(', ')
+
+        fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: order.customer_name,
+            telefone: formatPhone(order.customer_phone),
+            pedido,
+          }),
+        }).catch(err => console.error('Webhook n8n falhou:', err))
+      }
+    }
   }
 
   const filtered = orders.filter(o => o.status === activeTab)
