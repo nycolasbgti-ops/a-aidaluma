@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { supabase } from '../supabaseClient'
-
-const fmt = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
+import { api } from '../api'
+import { fmt } from '../utils/price'
 
 const PAYMENT_LABELS = { pix: 'Pix', credit: 'Crédito', debit: 'Débito', cash: 'Dinheiro' }
 
@@ -37,8 +36,7 @@ export default function ConfirmationView({ order, onNewOrder }) {
 
   useEffect(() => {
     const t = setTimeout(() => setTick(true), 100)
-    supabase.from('settings').select('pix_key, whatsapp_number').eq('id', 1).single()
-      .then(({ data }) => { if (data) setSettings(data) })
+    api.getSettings().then(data => { if (data) setSettings(data) }).catch(() => {})
     return () => clearTimeout(t)
   }, [])
 

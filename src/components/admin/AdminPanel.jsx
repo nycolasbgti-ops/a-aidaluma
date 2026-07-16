@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../supabaseClient'
+import { api } from '../../api'
+import { fmt } from '../../utils/price'
 import MenuManager from './MenuManager'
 
 const N8N_WEBHOOK_URL = 'http://179.197.78.71:5678/webhook/saiu-entrega'
-
-const fmt = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
 
 function formatPhone(raw) {
   const digits = String(raw || '').replace(/\D/g, '')
@@ -60,11 +59,8 @@ function buildComanda(order) {
   ]
 
   if (order.address) parts.push('', 'Endereço:', order.address)
-
   parts.push(div, itemLines)
-
   if (order.notes) parts.push('', 'Observação:', order.notes)
-
   parts.push(div, `Total: ${fmt(order.total)}`, '', 'Forma de pagamento:', pay, sep)
 
   return parts.join('\n')
@@ -89,22 +85,17 @@ function PrintModal({ order, onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
       <div className="bg-[#1A1A1A] rounded-2xl w-full max-w-sm flex flex-col max-h-[90vh]">
-
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0">
           <div>
             <p className="font-bold text-base">🖨️ Imprimir Comanda</p>
             <p className="text-xs text-gray-500 mt-0.5">Edite antes de imprimir se necessário</p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 bg-[#242424] rounded-full flex items-center justify-center text-gray-400 text-sm active:scale-95 transition-all"
-          >
+          <button onClick={onClose}
+            className="w-8 h-8 bg-[#242424] rounded-full flex items-center justify-center text-gray-400 text-sm active:scale-95 transition-all">
             ✕
           </button>
         </div>
 
-        {/* Textarea */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <textarea
             value={text}
@@ -112,26 +103,18 @@ function PrintModal({ order, onClose }) {
             rows={14}
             spellCheck={false}
             className="w-full bg-[#242424] rounded-xl px-3 py-3 font-mono text-xs text-gray-200
-                       outline-none focus:ring-2 focus:ring-[#D4AF37] resize-none leading-relaxed
-                       transition-all"
+                       outline-none focus:ring-2 focus:ring-[#D4AF37] resize-none leading-relaxed transition-all"
           />
         </div>
 
-        {/* Ações */}
         <div className="flex gap-3 px-4 pb-5 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3.5 bg-[#242424] rounded-2xl text-sm font-semibold text-gray-400
-                       active:scale-95 transition-all"
-          >
+          <button onClick={onClose}
+            className="flex-1 py-3.5 bg-[#242424] rounded-2xl text-sm font-semibold text-gray-400 active:scale-95 transition-all">
             Cancelar
           </button>
-          <button
-            onClick={handlePrint}
+          <button onClick={handlePrint}
             className="flex-1 py-3.5 bg-[#D4AF37] text-[#0A0A0A] rounded-2xl text-sm font-bold
-                       active:scale-95 transition-all shadow-md shadow-[#D4AF37]/30
-                       flex items-center justify-center gap-2"
-          >
+                       active:scale-95 transition-all shadow-md shadow-[#D4AF37]/30 flex items-center justify-center gap-2">
             🖨️ Confirmar Impressão
           </button>
         </div>
@@ -195,11 +178,9 @@ function OrderCard({ order, onAdvance, onPrint }) {
       )}
 
       <div className="flex gap-2">
-        <button
-          onClick={() => onPrint(order)}
+        <button onClick={() => onPrint(order)}
           className="flex-1 py-3 bg-[#242424] rounded-xl text-sm font-semibold text-gray-300
-                     active:scale-[0.97] transition-all flex items-center justify-center gap-1.5"
-        >
+                     active:scale-[0.97] transition-all flex items-center justify-center gap-1.5">
           🖨️ Imprimir
         </button>
         {cfg.next && (
@@ -214,70 +195,17 @@ function OrderCard({ order, onAdvance, onPrint }) {
   )
 }
 
-// ── Pedidos panel ─────────────────────────────────────────────
+// ── Painel de Pedidos ─────────────────────────────────────────
 
-function OrdersPanel() {
-  const [orders,      setOrders]      = useState([])
-  const [activeTab,   setActiveTab]   = useState('new')
-  const [loading,     setLoading]     = useState(true)
-  const [connOk,      setConnOk]      = useState(true)
-  const [printModal,  setPrintModal]  = useState(null)
-
-  const fetchOrders = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('orders').select('*').order('created_at', { ascending: false }).limit(200)
-      if (error) throw error
-      setOrders(data || [])
-      setConnOk(true)
-    } catch {
-      setConnOk(false)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchOrders()
-    const ch = supabase
-      .channel('admin-orders')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, ({ new: row }) =>
-        setOrders(prev => [row, ...prev]))
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, ({ new: row }) =>
-        setOrders(prev => prev.map(o => o.id === row.id ? row : o)))
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [fetchOrders])
-
-  const handleAdvance = async (order, status) => {
-    const { error } = await supabase.from('orders').update({ status }).eq('id', order.id)
-    if (!error) {
-      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status } : o))
-
-      if (status === 'delivering') {
-        const pedido = (order.items || [])
-          .map(item => `${item.qty || 1}x ${item.name}${item.crustLabel ? ` + ${item.crustLabel}` : ''}`)
-          .join(', ')
-
-        fetch(N8N_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nome: order.customer_name,
-            telefone: formatPhone(order.customer_phone),
-            pedido,
-          }),
-        }).catch(err => console.error('Webhook n8n falhou:', err))
-      }
-    }
-  }
+function OrdersPanel({ orders, loading, connOk, onAdvance, onRefetch }) {
+  const [activeTab,  setActiveTab]  = useState('new')
+  const [printModal, setPrintModal] = useState(null)
 
   const filtered = orders.filter(o => o.status === activeTab)
   const newCount = orders.filter(o => o.status === 'new').length
 
   return (
     <>
-      {/* Status tabs */}
       <div className="flex border-b border-white/5 bg-[#0A0A0A]">
         {ORDER_TABS.map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -309,8 +237,9 @@ function OrdersPanel() {
           <div className="text-center py-16 px-4">
             <span className="text-5xl block mb-4">⚠️</span>
             <p className="text-gray-300 font-semibold mb-1">Erro de conexão</p>
-            <p className="text-gray-500 text-sm mb-5">Verifique as credenciais do Supabase.</p>
-            <button onClick={fetchOrders} className="px-5 py-2.5 bg-[#1A1A1A] rounded-xl text-sm font-semibold">
+            <p className="text-gray-500 text-sm mb-5">Não foi possível conectar à API.</p>
+            <button onClick={onRefetch}
+              className="px-5 py-2.5 bg-[#1A1A1A] rounded-xl text-sm font-semibold">
               Tentar novamente
             </button>
           </div>
@@ -320,14 +249,16 @@ function OrdersPanel() {
             <p className="text-gray-500 font-medium">Nenhum pedido aqui</p>
           </div>
         ) : (
-          filtered.map(order => <OrderCard key={order.id} order={order} onAdvance={handleAdvance} onPrint={setPrintModal} />)
+          filtered.map(order => (
+            <OrderCard key={order.id} order={order} onAdvance={onAdvance} onPrint={setPrintModal} />
+          ))
         )}
       </div>
     </>
   )
 }
 
-// ── Settings panel ────────────────────────────────────────────
+// ── Configurações ─────────────────────────────────────────────
 
 function SettingsPanel() {
   const [form,    setForm]    = useState({ pix_key: '', whatsapp_number: '' })
@@ -337,24 +268,25 @@ function SettingsPanel() {
   const [error,   setError]   = useState('')
 
   useEffect(() => {
-    supabase.from('settings').select('pix_key, whatsapp_number').eq('id', 1).single()
-      .then(({ data, error: e }) => {
-        if (e) setError(e.message)
-        else if (data) setForm({ pix_key: data.pix_key || '', whatsapp_number: data.whatsapp_number || '' })
-        setLoading(false)
-      })
+    api.getSettings()
+      .then(data => setForm({ pix_key: data.pix_key || '', whatsapp_number: data.whatsapp_number || '' }))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
   const handleSave = async () => {
     setSaving(true)
     setSaved(false)
     setError('')
-    const { error: e } = await supabase.from('settings')
-      .update({ pix_key: form.pix_key.trim(), whatsapp_number: form.whatsapp_number.trim() })
-      .eq('id', 1)
-    setSaving(false)
-    if (e) setError(e.message)
-    else { setSaved(true); setTimeout(() => setSaved(false), 3000) }
+    try {
+      await api.updateSettings({ pix_key: form.pix_key.trim(), whatsapp_number: form.whatsapp_number.trim() })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const inputCls = 'w-full bg-[#242424] rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm font-mono'
@@ -419,25 +351,61 @@ const MAIN_TABS = [
 ]
 
 export default function AdminPanel({ onBack }) {
-  const [mainTab, setMainTab] = useState('orders')
-  const [orders, setOrders] = useState([])
+  const [mainTab,       setMainTab]       = useState('orders')
+  const [orders,        setOrders]        = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [connOk,        setConnOk]        = useState(true)
 
-  // Live badge for new orders even when on Cardápio tab
-  const [newCount, setNewCount] = useState(0)
-  useEffect(() => {
-    const ch = supabase
-      .channel('badge-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
-        const { data } = await supabase.from('orders').select('id').eq('status', 'new')
-        setNewCount((data || []).length)
-      })
-      .subscribe()
-
-    supabase.from('orders').select('id').eq('status', 'new').then(({ data }) =>
-      setNewCount((data || []).length))
-
-    return () => { supabase.removeChannel(ch) }
+  const fetchOrders = useCallback(() => {
+    api.getOrders()
+      .then(data => { setOrders(data); setConnOk(true) })
+      .catch(() => setConnOk(false))
+      .finally(() => setOrdersLoading(false))
   }, [])
+
+  useEffect(() => {
+    fetchOrders()
+
+    const sse = api.ordersEvents()
+
+    sse.addEventListener('order-insert', e => {
+      setOrders(prev => [JSON.parse(e.data), ...prev])
+    })
+    sse.addEventListener('order-update', e => {
+      const updated = JSON.parse(e.data)
+      setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))
+    })
+    sse.addEventListener('connected', () => setConnOk(true))
+    sse.onerror = () => setConnOk(false)
+
+    return () => sse.close()
+  }, [fetchOrders])
+
+  const handleAdvance = async (order, status) => {
+    try {
+      await api.updateOrder(order.id, { status })
+
+      if (status === 'delivering') {
+        const pedido = (order.items || [])
+          .map(item => `${item.qty || 1}x ${item.name}${item.crustLabel ? ` + ${item.crustLabel}` : ''}`)
+          .join(', ')
+
+        fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome:     order.customer_name,
+            telefone: formatPhone(order.customer_phone),
+            pedido,
+          }),
+        }).catch(err => console.error('Webhook n8n falhou:', err))
+      }
+    } catch (e) {
+      console.error('Falha ao avançar pedido:', e)
+    }
+  }
+
+  const newCount = orders.filter(o => o.status === 'new').length
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col">
@@ -451,8 +419,10 @@ export default function AdminPanel({ onBack }) {
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-xs font-medium text-green-400">Ao vivo</span>
+          <div className={`w-2 h-2 rounded-full ${connOk ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+          <span className={`text-xs font-medium ${connOk ? 'text-green-400' : 'text-red-400'}`}>
+            {connOk ? 'Ao vivo' : 'Offline'}
+          </span>
         </div>
       </div>
 
@@ -479,7 +449,13 @@ export default function AdminPanel({ onBack }) {
       {/* Content */}
       {mainTab === 'orders' ? (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <OrdersPanel />
+          <OrdersPanel
+            orders={orders}
+            loading={ordersLoading}
+            connOk={connOk}
+            onAdvance={handleAdvance}
+            onRefetch={fetchOrders}
+          />
         </div>
       ) : mainTab === 'settings' ? (
         <div className="flex-1 overflow-y-auto px-4 py-5 max-w-lg mx-auto w-full pb-10">

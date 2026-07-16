@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
-import { supabase } from '../supabaseClient'
-
-const fmt = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`
+import { api } from '../api'
+import { fmt } from '../utils/price'
 
 const PAYMENT_OPTIONS = [
   { value: 'pix',    label: '💠 Pix' },
@@ -21,15 +20,15 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
     notes: '',
   })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error,   setError]   = useState('')
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
 
   const validate = () => {
-    if (!form.name.trim())    return 'Por favor, informe seu nome.'
-    if (!form.phone.trim())   return 'Por favor, informe seu telefone.'
+    if (!form.name.trim())  return 'Por favor, informe seu nome.'
+    if (!form.phone.trim()) return 'Por favor, informe seu telefone.'
     if (form.deliveryType === 'delivery' && !form.address.trim())
-                              return 'Por favor, informe o endereço de entrega.'
+      return 'Por favor, informe o endereço de entrega.'
     return null
   }
 
@@ -41,7 +40,7 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
     setError('')
 
     try {
-      const payload = {
+      const order = await api.createOrder({
         customer_name:  form.name.trim(),
         customer_phone: form.phone.trim(),
         delivery_type:  form.deliveryType,
@@ -51,20 +50,10 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
         items:          cart,
         total,
         notes:          form.notes.trim() || null,
-        status:         'new',
-      }
-
-      const { data, error: dbErr } = await supabase
-        .from('orders')
-        .insert(payload)
-        .select()
-        .single()
-
-      if (dbErr) throw dbErr
-
-      onConfirm({ ...data, items: cart })
+      })
+      onConfirm({ ...order, items: cart })
     } catch (e) {
-      console.error(e)
+      console.error('Erro ao criar pedido:', e)
       setError('Não foi possível salvar o pedido. Verifique sua conexão e tente novamente.')
     } finally {
       setLoading(false)

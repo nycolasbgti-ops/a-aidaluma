@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
+import { api } from '../api'
+
+const POLL_INTERVAL = 30_000
 
 export function useMenu() {
   const [categories, setCategories] = useState([])
@@ -12,15 +14,10 @@ export function useMenu() {
 
     const load = async () => {
       try {
-        const [catRes, prodRes] = await Promise.all([
-          supabase.from('categories').select('*').eq('active', true).order('order_position'),
-          supabase.from('products').select('*').eq('active', true).order('order_position'),
-        ])
+        const { categories: cats, products: prods } = await api.getMenu()
         if (!mounted) return
-        if (catRes.error)  throw catRes.error
-        if (prodRes.error) throw prodRes.error
-        setCategories(catRes.data  || [])
-        setProducts(prodRes.data   || [])
+        setCategories(cats)
+        setProducts(prods)
         setError(null)
       } catch (e) {
         if (mounted) setError(e.message)
@@ -30,18 +27,8 @@ export function useMenu() {
     }
 
     load()
-
-    // Atualiza o menu ao vivo quando o admin salva mudanças
-    const ch = supabase
-      .channel('public-menu')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, load)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products'   }, load)
-      .subscribe()
-
-    return () => {
-      mounted = false
-      supabase.removeChannel(ch)
-    }
+    const interval = setInterval(load, POLL_INTERVAL)
+    return () => { mounted = false; clearInterval(interval) }
   }, [])
 
   // Produtos agrupados por category_id para acesso O(1)

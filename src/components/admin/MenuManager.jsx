@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { supabase } from '../../supabaseClient'
+import { api } from '../../api'
 import { fmt } from '../../utils/price'
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -10,28 +10,11 @@ const toSlug = (name) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
-const uploadImage = async (file) => {
-  const ext      = file.name.split('.').pop().toLowerCase()
-  const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-  const path     = `products/${fileName}`
-
-  const { error } = await supabase.storage
-    .from('menu-images')
-    .upload(path, file, { cacheControl: '3600', upsert: false })
-
-  if (error) throw error
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('menu-images')
-    .getPublicUrl(path)
-
-  return publicUrl
-}
-
 const EMPTY_CAT  = { name: '', icon: '🍕', order_position: 0, is_pizza: false }
 const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', priceM: '', priceG: '', image_url: '', active: true, order_position: 0 }
 
 // ── Currency mask helpers ─────────────────────────────────────
+
 const formatCurrency = (cents) => {
   const int = Math.floor(cents / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   const dec = (cents % 100).toString().padStart(2, '0')
@@ -144,16 +127,16 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
     if (!initial) return { ...EMPTY_PROD, category_id: defaultCategoryId || categories[0]?.id || '' }
     const hasSized = initial.prices?.unique === undefined
     return {
-      name:         initial.name,
-      description:  initial.description || '',
-      category_id:  initial.category_id,
-      priceType:    hasSized ? 'sized' : 'unique',
-      priceUnique:  toDisplayPrice(initial.prices?.unique),
-      priceP:       toDisplayPrice(initial.prices?.P),
-      priceM:       toDisplayPrice(initial.prices?.M),
-      priceG:       toDisplayPrice(initial.prices?.G),
-      image_url:    initial.image_url || '',
-      active:       initial.active ?? true,
+      name:           initial.name,
+      description:    initial.description || '',
+      category_id:    initial.category_id,
+      priceType:      hasSized ? 'sized' : 'unique',
+      priceUnique:    toDisplayPrice(initial.prices?.unique),
+      priceP:         toDisplayPrice(initial.prices?.P),
+      priceM:         toDisplayPrice(initial.prices?.M),
+      priceG:         toDisplayPrice(initial.prices?.G),
+      image_url:      initial.image_url || '',
+      active:         initial.active ?? true,
       order_position: initial.order_position ?? 0,
     }
   }
@@ -175,7 +158,7 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
     setUploading(true)
     setUploadErr('')
     try {
-      const url = await uploadImage(file)
+      const { url } = await api.uploadImage(file)
       setPreview(url)
       set('image_url', url)
     } catch (err) {
@@ -188,8 +171,7 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
   return (
     <div className="space-y-4">
       <Field label="Categoria *">
-        <select value={form.category_id} onChange={e => set('category_id', e.target.value)}
-          className={inputCls}>
+        <select value={form.category_id} onChange={e => set('category_id', e.target.value)} className={inputCls}>
           <option value="">Selecione...</option>
           {categories.map(c => (
             <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
@@ -288,7 +270,6 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
         {uploadErr && <p className="text-red-400 text-xs mt-1">{uploadErr}</p>}
       </div>
 
-      {/* Posição e ativo */}
       <Field label="Posição na lista (número menor = aparece primeiro)">
         <input type="number" value={form.order_position} onChange={e => set('order_position', e.target.value)}
           min={0} className={inputCls} />
@@ -322,41 +303,39 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
 // ── Main MenuManager ──────────────────────────────────────────
 
 export default function MenuManager() {
-  const [screen,      setScreen]      = useState('categories')  // 'categories' | 'products' | 'cat-form' | 'prod-form'
+  const [screen,      setScreen]      = useState('categories')
   const [categories,  setCategories]  = useState([])
   const [products,    setProducts]    = useState([])
   const [activeCat,   setActiveCat]   = useState(null)
-  const [editingCat,  setEditingCat]  = useState(null)  // null = criar novo
+  const [editingCat,  setEditingCat]  = useState(null)
   const [editingProd, setEditingProd] = useState(null)
   const [saving,      setSaving]      = useState(false)
   const [error,       setError]       = useState('')
   const [loading,     setLoading]     = useState(true)
 
   // ── Data fetching ──────────────────────────────────────────
+
   const loadCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories').select('*').order('order_position')
-    if (error) { setError(error.message); return }
-    setCategories(data || [])
+    const data = await api.getCategories()
+    setCategories(data)
   }
 
   const loadProducts = async (catId) => {
     if (!catId) return
-    const { data, error } = await supabase
-      .from('products').select('*').eq('category_id', catId).order('order_position')
-    if (error) { setError(error.message); return }
-    setProducts(data || [])
+    const data = await api.getProducts(catId)
+    setProducts(data)
   }
 
   useEffect(() => {
-    loadCategories().finally(() => setLoading(false))
+    loadCategories().catch(e => setError(e.message)).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    if (activeCat) loadProducts(activeCat.id)
+    if (activeCat) loadProducts(activeCat.id).catch(e => setError(e.message))
   }, [activeCat])
 
   // ── Save category ──────────────────────────────────────────
+
   const saveCategory = async (form) => {
     setSaving(true)
     setError('')
@@ -369,11 +348,9 @@ export default function MenuManager() {
         is_pizza:       form.is_pizza,
       }
       if (editingCat) {
-        const { error } = await supabase.from('categories').update(payload).eq('id', editingCat.id)
-        if (error) throw error
+        await api.updateCategory(editingCat.id, payload)
       } else {
-        const { error } = await supabase.from('categories').insert({ ...payload, active: true })
-        if (error) throw error
+        await api.createCategory(payload)
       }
       await loadCategories()
       setScreen('categories')
@@ -386,26 +363,35 @@ export default function MenuManager() {
   }
 
   // ── Toggle category active ─────────────────────────────────
+
   const toggleCatActive = async (cat) => {
-    await supabase.from('categories').update({ active: !cat.active }).eq('id', cat.id)
-    await loadCategories()
+    try {
+      await api.updateCategory(cat.id, { active: !cat.active })
+      await loadCategories()
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   // ── Delete category ────────────────────────────────────────
+
   const deleteCategory = async (cat) => {
     const ok = window.confirm(
       `Excluir a categoria "${cat.name}"?\n\n⚠️ ATENÇÃO: todos os produtos desta categoria serão excluídos permanentemente junto com ela (exclusão em cascata).\n\nEsta ação não pode ser desfeita.`
     )
     if (!ok) return
     setError('')
-    const { error } = await supabase.from('categories').delete().eq('id', cat.id)
-    if (error) { setError(error.message); return }
-    setCategories(prev => prev.filter(c => c.id !== cat.id))
-    // Se estava visualizando produtos desta categoria, volta para a lista
-    if (activeCat?.id === cat.id) { setActiveCat(null); setScreen('categories') }
+    try {
+      await api.deleteCategory(cat.id)
+      setCategories(prev => prev.filter(c => c.id !== cat.id))
+      if (activeCat?.id === cat.id) { setActiveCat(null); setScreen('categories') }
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   // ── Save product ───────────────────────────────────────────
+
   const saveProduct = async (form) => {
     setSaving(true)
     setError('')
@@ -418,7 +404,7 @@ export default function MenuManager() {
             G: parseCurrency(form.priceG),
           }
 
-      const cat = categories.find(c => c.id === form.category_id)
+      const cat      = categories.find(c => c.id === form.category_id)
       const is_sweet = /doces?/i.test(cat?.name || '')
 
       const payload = {
@@ -433,15 +419,12 @@ export default function MenuManager() {
       }
 
       if (editingProd) {
-        const { error } = await supabase.from('products').update(payload).eq('id', editingProd.id)
-        if (error) throw error
+        await api.updateProduct(editingProd.id, payload)
       } else {
-        const { error } = await supabase.from('products').insert(payload)
-        if (error) throw error
+        await api.createProduct(payload)
       }
 
       await loadProducts(form.category_id)
-      // If category changed, update activeCat
       const newCat = categories.find(c => c.id === form.category_id)
       if (newCat) setActiveCat(newCat)
       setScreen('products')
@@ -454,22 +437,32 @@ export default function MenuManager() {
   }
 
   // ── Toggle product active ──────────────────────────────────
+
   const toggleProdActive = async (prod) => {
-    await supabase.from('products').update({ active: !prod.active }).eq('id', prod.id)
-    await loadProducts(activeCat?.id)
+    try {
+      await api.updateProduct(prod.id, { active: !prod.active })
+      await loadProducts(activeCat?.id)
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   // ── Delete product ─────────────────────────────────────────
+
   const deleteProduct = async (prod) => {
     const ok = window.confirm(`Excluir o produto "${prod.name}"?\n\nEsta ação não pode ser desfeita.`)
     if (!ok) return
     setError('')
-    const { error } = await supabase.from('products').delete().eq('id', prod.id)
-    if (error) { setError(error.message); return }
-    setProducts(prev => prev.filter(p => p.id !== prod.id))
+    try {
+      await api.deleteProduct(prod.id)
+      setProducts(prev => prev.filter(p => p.id !== prod.id))
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   // ── Render helpers ─────────────────────────────────────────
+
   const BackButton = ({ label, onClick }) => (
     <button onClick={onClick}
       className="flex items-center gap-1.5 text-sm text-gray-400 mb-5 active:text-white transition-colors">
@@ -500,7 +493,6 @@ export default function MenuManager() {
     )
   }
 
-  // Category form
   if (screen === 'cat-form') {
     return (
       <div>
@@ -517,7 +509,6 @@ export default function MenuManager() {
     )
   }
 
-  // Product form
   if (screen === 'prod-form') {
     return (
       <div>
@@ -536,7 +527,6 @@ export default function MenuManager() {
     )
   }
 
-  // Product list
   if (screen === 'products' && activeCat) {
     return (
       <div>
@@ -570,28 +560,24 @@ export default function MenuManager() {
             {products.map(prod => (
               <div key={prod.id}
                 className={`bg-[#1A1A1A] rounded-2xl p-4 flex items-center gap-3 ${!prod.active ? 'opacity-40' : ''}`}>
-                {/* Imagem */}
                 <div className="w-14 h-14 bg-[#242424] rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
                   {prod.image_url
                     ? <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" />
                     : <span className="text-2xl">🍕</span>
                   }
                 </div>
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm text-white leading-snug truncate">{prod.name}</p>
                   <p className="text-xs text-[#FF9500] mt-0.5">{formatPrices(prod.prices)}</p>
                   {!prod.active && <span className="text-[10px] text-gray-600">● Inativo</span>}
                 </div>
-                {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => toggleProdActive(prod)}
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-colors ${
                       prod.active ? 'bg-green-500/15 text-green-400' : 'bg-[#2C2C2E] text-gray-500'
                     }`}
-                    title={prod.active ? 'Desativar' : 'Ativar'}
-                  >
+                    title={prod.active ? 'Desativar' : 'Ativar'}>
                     {prod.active ? '●' : '○'}
                   </button>
                   <button
@@ -641,13 +627,12 @@ export default function MenuManager() {
         <div className="text-center py-12">
           <span className="text-4xl block mb-3">🗂️</span>
           <p className="text-gray-500 text-sm">Nenhuma categoria ainda.</p>
-          <p className="text-gray-600 text-xs mt-1">Execute o SQL de setup para criar as categorias iniciais.</p>
+          <p className="text-gray-600 text-xs mt-1">Execute o Docker e suba o banco para carregar as categorias iniciais.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {categories.map(cat => (
             <div key={cat.id} className={`bg-[#1A1A1A] rounded-2xl flex items-center ${!cat.active ? 'opacity-40' : ''}`}>
-              {/* Category row */}
               <button
                 onClick={() => { setActiveCat(cat); setScreen('products') }}
                 className="flex-1 flex items-center gap-3 p-4 active:opacity-70 transition-opacity text-left">
@@ -663,15 +648,13 @@ export default function MenuManager() {
                 </svg>
               </button>
 
-              {/* Actions */}
               <div className="flex items-center gap-1 pr-3">
                 <button
                   onClick={() => toggleCatActive(cat)}
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-colors ${
                     cat.active ? 'bg-green-500/15 text-green-400' : 'bg-[#2C2C2E] text-gray-500'
                   }`}
-                  title={cat.active ? 'Desativar' : 'Ativar'}
-                >
+                  title={cat.active ? 'Desativar' : 'Ativar'}>
                   {cat.active ? '●' : '○'}
                 </button>
                 <button
@@ -700,8 +683,7 @@ export default function MenuManager() {
       <div className="mt-6 bg-[#1A1A1A] rounded-2xl p-4 border border-yellow-500/20">
         <p className="text-xs text-yellow-400 font-semibold mb-1">⚠️ Sobre itens inativos</p>
         <p className="text-xs text-gray-500 leading-relaxed">
-          Itens desativados (●○) ficam ocultos no cardápio. Para gerenciar itens ocultos, acesse
-          <span className="text-gray-400"> Supabase Dashboard → Table Editor</span>.
+          Itens desativados (●○) ficam ocultos no cardápio mas permanecem no banco de dados.
         </p>
       </div>
     </div>

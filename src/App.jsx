@@ -196,7 +196,7 @@ function ErrorState({ message }) {
       <p className="text-gray-600 text-xs font-mono bg-[#1A1A1A] rounded-xl px-4 py-3 mt-3 text-left break-all">
         {message}
       </p>
-      <p className="text-gray-600 text-sm mt-4">Verifique as credenciais em <code>supabaseClient.js</code>.</p>
+      <p className="text-gray-600 text-sm mt-4">Verifique se a API está rodando em <code>VITE_API_URL</code>.</p>
     </div>
   )
 }
