@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { api } from '../../api'
 import { fmt } from '../../utils/price'
 import MenuManager from './MenuManager'
+import AddonsManager from './AddonsManager'
 
 const N8N_WEBHOOK_URL = 'https://n8n.nycolasdev.com.br/webhook/saiu-entrega'
 
@@ -43,8 +44,13 @@ function buildComanda(order) {
     const lines = [`${item.qty || 1}x ${item.name}`]
     if (item.type === 'acai') {
       if (item.base)             lines.push(`  Massa: ${item.base.label}`)
+      if (item.caldas?.length)   lines.push(`  Caldas: ${item.caldas.map(c => c.label).join(', ')}`)
       if (item.toppings?.length) lines.push(`  Acomp: ${item.toppings.map(t => t.label).join(', ')}`)
       if (item.extras?.length)   lines.push(`  Extras: ${item.extras.map(e => e.label).join(', ')}`)
+    }
+    if (item.type === 'flavored' && item.flavors?.length) {
+      const fl = item.flavors.filter(f => f.qty > 0).map(f => `${f.qty}x ${f.name}`).join(', ')
+      if (fl) lines.push(`  Sabores: ${fl}`)
     }
     return lines
   }).join('\n')
@@ -351,7 +357,8 @@ function SettingsPanel() {
 const MAIN_TABS = [
   { key: 'orders',   label: '📋 Pedidos'       },
   { key: 'menu',     label: '🍧 Cardápio'      },
-  { key: 'settings', label: '⚙️ Configurações' },
+  { key: 'addons',   label: '🧂 Adicionais'    },
+  { key: 'settings', label: '⚙️ Config'        },
 ]
 
 export default function AdminPanel({ onBack }) {
@@ -421,7 +428,7 @@ export default function AdminPanel({ onBack }) {
         <div className="flex-1">
           <h1 className="text-lg font-bold leading-tight">Painel Admin</h1>
           <p className="text-xs text-gray-500">
-            {{ orders: 'Pedidos em tempo real', menu: 'Gerenciar cardápio', settings: 'Chave Pix e WhatsApp' }[mainTab]}
+            {{ orders: 'Pedidos em tempo real', menu: 'Gerenciar cardápio', addons: 'Massas, caldas e acompanhamentos', settings: 'Chave Pix e WhatsApp' }[mainTab]}
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -462,6 +469,10 @@ export default function AdminPanel({ onBack }) {
             onAdvance={handleAdvance}
             onRefetch={fetchOrders}
           />
+        </div>
+      ) : mainTab === 'addons' ? (
+        <div className="flex-1 overflow-y-auto px-4 py-5 max-w-lg mx-auto w-full pb-10">
+          <AddonsManager />
         </div>
       ) : mainTab === 'settings' ? (
         <div className="flex-1 overflow-y-auto px-4 py-5 max-w-lg mx-auto w-full pb-10">

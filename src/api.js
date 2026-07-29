@@ -56,11 +56,17 @@ export const api = {
   updateProduct: (id, data)  => request('PATCH',  `/api/products/${id}`, data),
   deleteProduct: (id)        => request('DELETE', `/api/products/${id}`),
 
-  // ── Admin: Acompanhamentos ────────────────────────────────────
+  // ── Admin: Acompanhamentos (legado) ──────────────────────────
   getToppings:   ()          => request('GET',    '/api/toppings'),
   createTopping: (data)      => request('POST',   '/api/toppings', data),
   updateTopping: (id, data)  => request('PATCH',  `/api/toppings/${id}`, data),
   deleteTopping: (id)        => request('DELETE', `/api/toppings/${id}`),
+
+  // ── Admin: Adicionais (massas, caldas, acompanhamentos, extras) ──
+  getAddons:    ()          => request('GET',    '/api/addons'),
+  createAddon:  (data)      => request('POST',   '/api/addons', data),
+  updateAddon:  (id, data)  => request('PATCH',  `/api/addons/${id}`, data),
+  deleteAddon:  (id)        => request('DELETE', `/api/addons/${id}`),
 
   // ── Admin: Configurações ──────────────────────────────────────
   updateSettings: (data) => request('PATCH', '/api/settings', data),

@@ -1,31 +1,52 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { categories as mockCategories, products as mockProducts, ACAI_TOPPINGS, ACAI_EXTRAS } from '../data/menu'
+import { categories as mockCategories, products as mockProducts, ACAI_BASES, ACAI_TOPPINGS, ACAI_EXTRAS } from '../data/menu'
 
-// Normaliza campo `name` do Supabase para `label` esperado pelo modal
-const normalize = t => ({ key: t.key, label: t.name, price: Number(t.price) })
+const normalizeAddon = (a) => ({ key: a.id ?? a.key, label: a.name, price: Number(a.price) })
+
+function groupAddons(list) {
+  const grouped = { massa: [], calda: [], acompanhamento: [], extra: [] }
+  for (const a of (list || [])) {
+    if (a.active === false) continue
+    if (grouped[a.category]) grouped[a.category].push(normalizeAddon(a))
+  }
+  return grouped
+}
 
 export function useMenu() {
-  const [categories,   setCategories]   = useState([])
-  const [products,     setProducts]     = useState([])
-  const [freeToppings, setFreeToppings] = useState([])
-  const [extras,       setExtras]       = useState([])
-  const [loading,      setLoading]      = useState(true)
-  const [error,        setError]        = useState(null)
+  const [categories, setCategories] = useState([])
+  const [products,   setProducts]   = useState([])
+  const [addons,     setAddons]     = useState({ massa: [], calda: [], acompanhamento: [], extra: [] })
+  const [loading,    setLoading]    = useState(true)
+  const [error,      setError]      = useState(null)
 
   useEffect(() => {
     api.getMenu()
-      .then(({ categories, products, toppings = [] }) => {
+      .then(({ categories, products, addons: rawAddons, toppings }) => {
         setCategories(categories)
         setProducts(products)
-        setFreeToppings(toppings.filter(t => Number(t.price) === 0).map(normalize))
-        setExtras(toppings.filter(t => Number(t.price) > 0).map(normalize))
+
+        if (rawAddons?.length) {
+          setAddons(groupAddons(rawAddons))
+        } else if (toppings?.length) {
+          // Fallback: legado com tabela toppings (price=0 → acompanhamento, price>0 → extra)
+          setAddons({
+            massa:          [],
+            calda:          [],
+            acompanhamento: toppings.filter(t => Number(t.price) === 0).map(normalizeAddon),
+            extra:          toppings.filter(t => Number(t.price) > 0).map(normalizeAddon),
+          })
+        }
       })
       .catch(() => {
         setCategories(mockCategories)
         setProducts(mockProducts)
-        setFreeToppings(ACAI_TOPPINGS.map(t => ({ key: t.key, label: t.label, price: 0 })))
-        setExtras(ACAI_EXTRAS.map(e => ({ key: e.key, label: e.label, price: Number(e.price) })))
+        setAddons({
+          massa:          ACAI_BASES.map(b => ({ key: b.key, label: b.label, price: 0 })),
+          calda:          [],
+          acompanhamento: ACAI_TOPPINGS.map(t => ({ key: t.key, label: t.label, price: 0 })),
+          extra:          ACAI_EXTRAS.map(e => ({ key: e.key, label: e.label, price: Number(e.price) })),
+        })
         setError('Modo demonstração — conecte o Supabase para dados reais.')
       })
       .finally(() => setLoading(false))
@@ -37,5 +58,5 @@ export function useMenu() {
     return acc
   }, {})
 
-  return { categories, products, byCategory, freeToppings, extras, loading, error }
+  return { categories, products, byCategory, addons, loading, error }
 }

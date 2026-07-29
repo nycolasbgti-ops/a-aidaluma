@@ -124,10 +124,10 @@ app.get('/api/categories', async (req, res) => {
 
 app.post('/api/categories', async (req, res) => {
   try {
-    const { name, slug, icon, order_position, is_pizza } = req.body
+    const { name, slug, icon, order_position, is_builder } = req.body
     const result = await pool.query(
-      'INSERT INTO categories (name, slug, icon, order_position, is_pizza, active) VALUES ($1,$2,$3,$4,$5,true) RETURNING *',
-      [name, slug, icon, order_position, is_pizza],
+      'INSERT INTO categories (name, slug, icon, order_position, is_builder, active) VALUES ($1,$2,$3,$4,$5,true) RETURNING *',
+      [name, slug, icon, order_position, is_builder],
     )
     res.status(201).json(result.rows[0])
   } catch (e) {
@@ -137,7 +137,7 @@ app.post('/api/categories', async (req, res) => {
 
 app.patch('/api/categories/:id', async (req, res) => {
   try {
-    const allowed = ['name', 'slug', 'icon', 'order_position', 'is_pizza', 'active']
+    const allowed = ['name', 'slug', 'icon', 'order_position', 'is_builder', 'active']
     const updates = Object.entries(req.body).filter(([k]) => allowed.includes(k))
     if (!updates.length) return res.status(400).json({ error: 'Nenhum campo válido enviado' })
 
@@ -269,5 +269,5 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // ── Start ─────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`🍕 Pizzaria API rodando na porta ${PORT}`)
+  console.log(`🍧 Açaiteria API rodando na porta ${PORT}`)
 })

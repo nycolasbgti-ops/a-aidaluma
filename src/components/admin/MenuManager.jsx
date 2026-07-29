@@ -11,7 +11,7 @@ const toSlug = (name) =>
     .replace(/^-|-$/g, '')
 
 const EMPTY_CAT  = { name: '', icon: '🍧', order_position: 0, is_builder: false }
-const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', priceM: '', priceG: '', image_url: '', active: true, order_position: 0 }
+const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', sizeLabel1: '', priceM: '', sizeLabel2: '', priceG: '', sizeLabel3: '', image_url: '', active: true, order_position: 0, flavors: [] }
 
 // ── Currency mask helpers ─────────────────────────────────────
 
@@ -159,9 +159,10 @@ function CategoryForm({ initial, onSave, onCancel, saving }) {
 
 function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel, saving }) {
   const fileInputRef = useRef()
-  const [uploading, setUploading] = useState(false)
-  const [preview,   setPreview]   = useState(initial?.image_url || '')
-  const [uploadErr, setUploadErr] = useState('')
+  const [uploading,    setUploading]    = useState(false)
+  const [preview,      setPreview]      = useState(initial?.image_url || '')
+  const [uploadErr,    setUploadErr]    = useState('')
+  const [flavorInput,  setFlavorInput]  = useState('')
 
   const initForm = () => {
     if (!initial) return { ...EMPTY_PROD, category_id: defaultCategoryId || categories[0]?.id || '' }
@@ -173,13 +174,26 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
       priceType:      hasSized ? 'sized' : 'unique',
       priceUnique:    toDisplayPrice(initial.prices?.unique),
       priceP:         toDisplayPrice(initial.prices?.P),
+      sizeLabel1:     initial.prices?.labels?.P || '',
       priceM:         toDisplayPrice(initial.prices?.M),
+      sizeLabel2:     initial.prices?.labels?.M || '',
       priceG:         toDisplayPrice(initial.prices?.G),
+      sizeLabel3:     initial.prices?.labels?.G || '',
       image_url:      initial.image_url || '',
       active:         initial.active ?? true,
       order_position: initial.order_position ?? 0,
+      flavors:        initial.flavors || [],
     }
   }
+
+  const addFlavor = () => {
+    const v = flavorInput.trim()
+    if (!v || form.flavors.includes(v)) return
+    set('flavors', [...form.flavors, v])
+    setFlavorInput('')
+  }
+
+  const removeFlavor = (i) => set('flavors', form.flavors.filter((_, idx) => idx !== i))
 
   const [form, setForm] = useState(initForm)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -221,7 +235,7 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
 
       <Field label="Nome do produto *">
         <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
-          placeholder="Ex: 01 - Mussarela" className={inputCls} />
+          placeholder="Ex: Copo 500ml, Picolé de Morango..." className={inputCls} />
       </Field>
 
       <Field label="Descrição">
@@ -235,7 +249,7 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
         <SectionTitle>Preço</SectionTitle>
         <div className="grid grid-cols-2 gap-2 mb-3">
           {[
-            { v: 'sized',  label: 'Por Tamanho', sub: 'P / M / G' },
+            { v: 'sized',  label: 'Por Tamanho', sub: '3 tamanhos' },
             { v: 'unique', label: 'Preço Único',  sub: 'Um valor só' },
           ].map(opt => (
             <button key={opt.v} onClick={() => set('priceType', opt.v)}
@@ -257,12 +271,18 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {[
-              { key: 'priceP', label: 'P — Pequena' },
-              { key: 'priceM', label: 'M — Média'   },
-              { key: 'priceG', label: 'G — Grande'  },
-            ].map(({ key, label }) => (
-              <div key={key}>
-                <label className="text-[11px] text-gray-500 block mb-1">{label}</label>
+              { key: 'priceP', labelKey: 'sizeLabel1', ph: 'Ex: 300ml' },
+              { key: 'priceM', labelKey: 'sizeLabel2', ph: 'Ex: 500ml' },
+              { key: 'priceG', labelKey: 'sizeLabel3', ph: 'Ex: 700ml' },
+            ].map(({ key, labelKey, ph }) => (
+              <div key={key} className="space-y-1">
+                <input
+                  type="text"
+                  value={form[labelKey]}
+                  onChange={e => set(labelKey, e.target.value)}
+                  placeholder={ph}
+                  className="w-full bg-[#2C2C2E] rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:ring-1 focus:ring-[#FF3B30] transition-all placeholder-gray-700 text-center"
+                />
                 <input type="text" inputMode="numeric" value={form[key]}
                   onChange={handlePriceChange(key)}
                   placeholder="0,00"
@@ -308,6 +328,46 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
           </button>
         )}
         {uploadErr && <p className="text-red-400 text-xs mt-1">{uploadErr}</p>}
+      </div>
+
+      {/* ── Sabores ──────────────────────────────────────────── */}
+      <div>
+        <SectionTitle>Sabores</SectionTitle>
+        <p className="text-xs text-gray-600 mb-3 -mt-1">
+          Opcional — use para produtos com variações (ex: Picolés, Moreninhas). O cliente escolhe as quantidades de cada sabor.
+        </p>
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            value={flavorInput}
+            onChange={e => setFlavorInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addFlavor() } }}
+            placeholder="Nome do sabor (ex: Flocos, Crocantito...)"
+            className={`${inputCls} flex-1`}
+          />
+          <button
+            type="button"
+            onClick={addFlavor}
+            disabled={!flavorInput.trim()}
+            className="px-4 py-3 bg-[#FF3B30] rounded-xl text-sm font-bold disabled:opacity-40 flex-shrink-0 active:scale-95 transition-all">
+            +
+          </button>
+        </div>
+        {form.flavors.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {form.flavors.map((f, i) => (
+              <div key={i} className="flex items-center gap-1.5 bg-[#242424] rounded-full px-3 py-1.5">
+                <span className="text-sm text-white">{f}</span>
+                <button
+                  type="button"
+                  onClick={() => removeFlavor(i)}
+                  className="w-4 h-4 bg-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white text-xs leading-none">
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Field label="Posição na lista (número menor = aparece primeiro)">
@@ -436,26 +496,29 @@ export default function MenuManager() {
     setSaving(true)
     setError('')
     try {
+      const sizeLabels = {}
+      if (form.sizeLabel1?.trim()) sizeLabels.P = form.sizeLabel1.trim()
+      if (form.sizeLabel2?.trim()) sizeLabels.M = form.sizeLabel2.trim()
+      if (form.sizeLabel3?.trim()) sizeLabels.G = form.sizeLabel3.trim()
+
       const prices = form.priceType === 'unique'
         ? { unique: parseCurrency(form.priceUnique) }
         : {
             P: parseCurrency(form.priceP),
             M: parseCurrency(form.priceM),
             G: parseCurrency(form.priceG),
+            ...(Object.keys(sizeLabels).length ? { labels: sizeLabels } : {}),
           }
-
-      const cat      = categories.find(c => c.id === form.category_id)
-      const is_sweet = /doces?/i.test(cat?.name || '')
 
       const payload = {
         category_id:    form.category_id,
         name:           form.name.trim(),
         description:    form.description.trim() || null,
         prices,
-        is_sweet,
         image_url:      form.image_url || null,
         active:         form.active,
         order_position: parseInt(form.order_position) || 0,
+        flavors:        form.flavors || [],
       }
 
       if (editingProd) {
@@ -517,9 +580,9 @@ export default function MenuManager() {
     if (!prices) return '—'
     if (prices.unique !== undefined) return fmt(prices.unique)
     const parts = []
-    if (prices.P !== undefined) parts.push(`P: ${fmt(prices.P)}`)
-    if (prices.M !== undefined) parts.push(`M: ${fmt(prices.M)}`)
-    if (prices.G !== undefined) parts.push(`G: ${fmt(prices.G)}`)
+    if (prices.P !== undefined) parts.push(`${prices.labels?.P || 'P'}: ${fmt(prices.P)}`)
+    if (prices.M !== undefined) parts.push(`${prices.labels?.M || 'M'}: ${fmt(prices.M)}`)
+    if (prices.G !== undefined) parts.push(`${prices.labels?.G || 'G'}: ${fmt(prices.G)}`)
     return parts.join(' · ')
   }
 

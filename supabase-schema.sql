@@ -254,6 +254,61 @@ VALUES
 
 
 -- ────────────────────────────────────────────────────────────
+-- MIGRAÇÃO: Açaiteria — flavors + addons
+-- Execute separadamente se o banco já existir
+-- ────────────────────────────────────────────────────────────
+
+-- 1. Coluna flavors na tabela products
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS flavors JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+-- 2. Tabela addons
+CREATE TABLE IF NOT EXISTS addons (
+  id              UUID          DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at      TIMESTAMPTZ   DEFAULT NOW() NOT NULL,
+  category        TEXT          NOT NULL
+                                CHECK (category IN ('massa', 'calda', 'acompanhamento', 'extra')),
+  name            TEXT          NOT NULL,
+  price           DECIMAL(10,2) NOT NULL DEFAULT 0,
+  active          BOOLEAN       NOT NULL DEFAULT true,
+  order_position  SMALLINT      NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_addons_category ON addons(category);
+CREATE INDEX IF NOT EXISTS idx_addons_active   ON addons(active);
+
+ALTER TABLE addons ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read addons" ON addons
+  FOR SELECT USING (true);
+
+-- 3. Seed inicial de addons
+INSERT INTO addons (category, name, price, order_position) VALUES
+  ('massa', 'Açaí Tradicional',    0.00, 1),
+  ('massa', 'Sorvete de Morango',  0.00, 2),
+  ('massa', 'Casadinho',           0.00, 3),
+  ('massa', 'Açaí com Cupuaçu',   0.00, 4),
+  ('calda', 'Leite Condensado',    0.00, 1),
+  ('calda', 'Mel',                 0.00, 2),
+  ('calda', 'Calda de Chocolate',  0.00, 3),
+  ('calda', 'Calda de Morango',    0.00, 4),
+  ('acompanhamento', 'Leite Ninho',       0.00,  1),
+  ('acompanhamento', 'Paçoca',           0.00,  2),
+  ('acompanhamento', 'Morango',          0.00,  3),
+  ('acompanhamento', 'Banana',           0.00,  4),
+  ('acompanhamento', 'Granola',          0.00,  5),
+  ('acompanhamento', 'Leite Condensado', 0.00,  6),
+  ('acompanhamento', 'Amendoim',         0.00,  7),
+  ('acompanhamento', 'Mel',              0.00,  8),
+  ('acompanhamento', 'Coco Ralado',      0.00,  9),
+  ('acompanhamento', 'Confete',          0.00, 10),
+  ('extra', 'Nutella',           4.00, 1),
+  ('extra', 'Creme de Pistache', 5.00, 2),
+  ('extra', 'Chocoball',         2.50, 3),
+  ('extra', 'Bis Triturado',     2.00, 4);
+
+
+-- ────────────────────────────────────────────────────────────
 -- STORAGE: bucket para imagens de produtos
 -- ────────────────────────────────────────────────────────────
 -- Execute separadamente no SQL Editor se quiser criar via SQL:

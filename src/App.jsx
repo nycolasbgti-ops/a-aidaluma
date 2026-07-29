@@ -4,6 +4,7 @@ import Header from './components/Header'
 import CategoryTabs from './components/CategoryTabs'
 import Menu from './components/Menu'
 import AcaiBuilderModal from './components/AcaiBuilderModal'
+import FlavorPickerModal from './components/FlavorPickerModal'
 import CartBottomSheet from './components/CartBottomSheet'
 import CheckoutView from './components/CheckoutView'
 import ConfirmationView from './components/ConfirmationView'
@@ -15,12 +16,13 @@ import AdminPanel from './components/admin/AdminPanel'
 import { ADMIN_PIN } from './data/menu'
 
 export default function App() {
-  const { categories, byCategory, freeToppings, extras, loading, error } = useMenu()
+  const { categories, byCategory, addons, loading, error } = useMenu()
 
   const [view,           setView]          = useState('menu')
   const [cart,           setCart]          = useState([])
   const [activeCatId,    setActiveCatId]   = useState(null)
   const [builder,        setBuilder]       = useState({ open: false, product: null })
+  const [flavorPicker,   setFlavorPicker]  = useState({ open: false, product: null })
   const [cartOpen,       setCartOpen]      = useState(false)
   const [confirmedOrder, setConfirmedOrder] = useState(null)
   const [showAdminLogin, setAdminLogin]    = useState(false)
@@ -71,7 +73,7 @@ export default function App() {
   // ── Cart ─────────────────────────────────────────────────────
   const addToCart = useCallback((item) => {
     setCart(prev => {
-      if (item.type === 'acai') {
+      if (item.type === 'acai' || item.type === 'flavored') {
         return [...prev, { ...item, cartId: Date.now() + Math.random() }]
       }
       const existing = prev.find(i => i.id === item.id)
@@ -104,6 +106,8 @@ export default function App() {
     const productCat = categories.find(c => c.id === product.category_id) ?? null
     if (productCat?.is_builder) {
       setBuilder({ open: true, product })
+    } else if (product.flavors?.length > 0) {
+      setFlavorPicker({ open: true, product })
     } else {
       const price = Number(product.prices?.unique ?? product.price ?? 0)
       addToCart({ ...product, type: 'other', price, qty: 1 })
@@ -184,12 +188,23 @@ export default function App() {
       {builder.open && (
         <AcaiBuilderModal
           product={builder.product}
-          toppings={freeToppings}
-          extras={extras}
+          addons={addons}
           onClose={() => setBuilder({ open: false, product: null })}
           onAdd={(item) => {
             addToCart(item)
             setBuilder({ open: false, product: null })
+          }}
+        />
+      )}
+
+      {/* Modal de sabores (picolés, moreninhas etc.) */}
+      {flavorPicker.open && (
+        <FlavorPickerModal
+          product={flavorPicker.product}
+          onClose={() => setFlavorPicker({ open: false, product: null })}
+          onAdd={(item) => {
+            addToCart(item)
+            setFlavorPicker({ open: false, product: null })
           }}
         />
       )}

@@ -15,6 +15,11 @@ function CartItem({ item, onUpdateQty, onRemove }) {
             {item.base && (
               <p className="text-xs text-[#DB2777]">🍧 {item.base.label}</p>
             )}
+            {item.caldas?.length > 0 && (
+              <p className="text-xs text-amber-400 leading-relaxed">
+                🍯 {item.caldas.map(c => c.label).join(', ')}
+              </p>
+            )}
             {item.toppings?.length > 0 && (
               <p className="text-xs text-gray-500 leading-relaxed">
                 + {item.toppings.map(t => t.label).join(', ')}
@@ -25,6 +30,14 @@ function CartItem({ item, onUpdateQty, onRemove }) {
                 ✨ {item.extras.map(e => e.label).join(', ')}
               </p>
             )}
+          </div>
+        )}
+
+        {item.type === 'flavored' && item.flavors?.length > 0 && (
+          <div className="mt-1">
+            <p className="text-xs text-gray-400 leading-relaxed">
+              {item.flavors.filter(f => f.qty > 0).map(f => `${f.qty}× ${f.name}`).join(', ')}
+            </p>
           </div>
         )}
 

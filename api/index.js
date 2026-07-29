@@ -11,17 +11,17 @@ app.use(express.json())
 
 app.get('/api/menu', async (req, res) => {
   try {
-    const [cats, prods, tops] = await Promise.all([
+    const [cats, prods, addons] = await Promise.all([
       supabase.from('categories').select('*').eq('active', true).order('order_position'),
       supabase.from('products').select('*').eq('active', true).order('order_position'),
-      supabase.from('toppings').select('*').eq('active', true).order('order_position'),
+      supabase.from('addons').select('*').eq('active', true).order('order_position'),
     ])
     if (cats.error) throw cats.error
     if (prods.error) throw prods.error
     res.json({
       categories: cats.data,
       products:   prods.data,
-      toppings:   tops.data ?? [],
+      addons:     addons.data ?? [],
     })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -197,10 +197,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
-    const { category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position } = req.body
+    const { category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position, flavors } = req.body
     const { data, error } = await supabase
       .from('products')
-      .insert({ category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position })
+      .insert({ category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position, flavors: flavors ?? [] })
       .select()
       .single()
     if (error) throw error
@@ -212,7 +212,7 @@ app.post('/api/products', async (req, res) => {
 
 app.patch('/api/products/:id', async (req, res) => {
   try {
-    const allowed = ['category_id', 'name', 'description', 'prices', 'free_toppings', 'emoji', 'image_url', 'active', 'order_position']
+    const allowed = ['category_id', 'name', 'description', 'prices', 'free_toppings', 'emoji', 'image_url', 'active', 'order_position', 'flavors']
     const patch = Object.fromEntries(
       Object.entries(req.body).filter(([k]) => allowed.includes(k))
     )
@@ -294,6 +294,68 @@ app.patch('/api/toppings/:id', async (req, res) => {
 app.delete('/api/toppings/:id', async (req, res) => {
   try {
     const { error } = await supabase.from('toppings').delete().eq('id', req.params.id)
+    if (error) throw error
+    res.status(204).end()
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ── Admin: Adicionais ─────────────────────────────────────────
+
+app.get('/api/addons', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('addons')
+      .select('*')
+      .order('category')
+      .order('order_position')
+    if (error) throw error
+    res.json(data)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/addons', async (req, res) => {
+  try {
+    const { category, name, price, order_position } = req.body
+    const { data, error } = await supabase
+      .from('addons')
+      .insert({ category, name, price: price ?? 0, order_position: order_position ?? 0, active: true })
+      .select()
+      .single()
+    if (error) throw error
+    res.status(201).json(data)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.patch('/api/addons/:id', async (req, res) => {
+  try {
+    const allowed = ['category', 'name', 'price', 'active', 'order_position']
+    const patch = Object.fromEntries(
+      Object.entries(req.body).filter(([k]) => allowed.includes(k))
+    )
+    if (!Object.keys(patch).length) return res.status(400).json({ error: 'Nenhum campo válido' })
+    const { data, error } = await supabase
+      .from('addons')
+      .update(patch)
+      .eq('id', req.params.id)
+      .select()
+      .single()
+    if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Adicional não encontrado' })
+    res.json(data)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.delete('/api/addons/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('addons').delete().eq('id', req.params.id)
     if (error) throw error
     res.status(204).end()
   } catch (e) {

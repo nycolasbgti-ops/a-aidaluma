@@ -45,7 +45,7 @@ export default function AdminLogin({ onLogin, onClose }) {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold">Área da Pizzaria</h2>
+          <h2 className="text-xl font-bold">Painel Administrativo</h2>
           <p className="text-sm text-gray-500 mt-1">Digite o PIN de acesso</p>
         </div>
 
