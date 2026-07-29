@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { categories as mockCategories, products as mockProducts } from '../data/menu'
+import { api } from '../api'
+import { categories as mockCategories, products as mockProducts, ACAI_TOPPINGS, ACAI_EXTRAS } from '../data/menu'
 
-// API desconectada — dados servidos localmente enquanto o backend não está configurado
 export function useMenu() {
   const [categories, setCategories] = useState([])
   const [products,   setProducts]   = useState([])
@@ -9,9 +9,18 @@ export function useMenu() {
   const [error,      setError]      = useState(null)
 
   useEffect(() => {
-    setCategories(mockCategories)
-    setProducts(mockProducts)
-    setLoading(false)
+    api.getMenu()
+      .then(({ categories, products }) => {
+        setCategories(categories)
+        setProducts(products)
+      })
+      .catch(() => {
+        // Fallback para dados locais se a API não estiver disponível
+        setCategories(mockCategories)
+        setProducts(mockProducts)
+        setError('Modo demonstração — conecte o backend para dados reais.')
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   const byCategory = products.reduce((acc, p) => {
