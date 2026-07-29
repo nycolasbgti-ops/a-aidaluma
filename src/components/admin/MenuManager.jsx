@@ -676,8 +676,13 @@ export default function MenuManager() {
               <button
                 onClick={() => { setActiveCat(cat); setScreen('products') }}
                 className="flex-1 flex items-center gap-3 p-4 active:opacity-70 transition-opacity text-left">
-                <span className="text-2xl w-8 text-center">{cat.icon}</span>
-                <div className="flex-1 min-w-0">
+                <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+                  {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/'))
+                    ? <img src={cat.icon} alt={cat.name} className="w-8 h-8 object-contain rounded" />
+                    : <span className="text-2xl">{cat.icon}</span>
+                  }
+                </div>
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="font-bold text-sm text-white">{cat.name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {cat.is_builder ? '🍧 Com montagem' : '📋 Simples'} · Ordem {cat.order_position}
