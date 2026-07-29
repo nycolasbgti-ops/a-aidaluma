@@ -573,7 +573,13 @@ export default function MenuManager() {
         <BackButton label="Categorias" onClick={() => setScreen('categories')} />
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-lg font-bold">{activeCat.icon} {activeCat.name}</h3>
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              {activeCat.icon && (activeCat.icon.startsWith('http') || activeCat.icon.startsWith('/'))
+                ? <img src={activeCat.icon} alt={activeCat.name} className="w-8 h-8 object-contain rounded flex-shrink-0" />
+                : <span>{activeCat.icon}</span>
+              }
+              {activeCat.name}
+            </h3>
             <p className="text-xs text-gray-500">{products.length} produto(s)</p>
           </div>
           <button
