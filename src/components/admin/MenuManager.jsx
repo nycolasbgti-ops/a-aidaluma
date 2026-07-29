@@ -68,12 +68,33 @@ const inputCls = "w-full bg-[#242424] rounded-xl px-4 py-3 text-white placeholde
 // ── Category Form ─────────────────────────────────────────────
 
 function CategoryForm({ initial, onSave, onCancel, saving }) {
+  const iconInputRef = useRef()
+  const [uploading, setUploading] = useState(false)
+  const [uploadErr, setUploadErr] = useState('')
   const [form, setForm] = useState(
     initial
       ? { name: initial.name, icon: initial.icon, order_position: initial.order_position, is_builder: initial.is_builder }
       : { ...EMPTY_CAT }
   )
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleIconFile = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    setUploadErr('')
+    try {
+      const { url } = await api.uploadImage(file)
+      set('icon', url)
+    } catch (err) {
+      setUploadErr('Erro no upload: ' + err.message)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const isIconUrl = form.icon && (form.icon.startsWith('http') || form.icon.startsWith('/'))
 
   return (
     <div className="space-y-4">
@@ -85,14 +106,25 @@ function CategoryForm({ initial, onSave, onCancel, saving }) {
       <Field label="Ícone (Emoji ou URL da Imagem) *">
         <div className="flex items-center gap-3">
           <input type="text" value={form.icon} onChange={e => set('icon', e.target.value)}
-            placeholder="🍕 ou https://..." className={`${inputCls} flex-1`} />
+            placeholder="🍕 ou https://..." className={`${inputCls} flex-1`} disabled={uploading} />
+          <button type="button" onClick={() => iconInputRef.current?.click()} disabled={uploading}
+            title="Enviar foto"
+            className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-[#242424] rounded-xl border border-purple-800/30 hover:border-purple-500 transition-colors disabled:opacity-50">
+            {uploading
+              ? <svg className="w-5 h-5 animate-spin text-purple-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              : <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            }
+          </button>
           <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-[#242424] rounded-xl">
-            {form.icon && (form.icon.startsWith('http') || form.icon.startsWith('/'))
+            {isIconUrl
               ? <img src={form.icon} alt="preview" className="w-10 h-10 object-contain rounded" />
               : <span className="text-2xl">{form.icon}</span>
             }
           </div>
+          <input ref={iconInputRef} type="file" accept="image/*" className="hidden" onChange={handleIconFile} />
         </div>
+        {uploading && <p className="text-xs text-purple-400 mt-1">Enviando foto...</p>}
+        {uploadErr && <p className="text-xs text-red-400 mt-1">{uploadErr}</p>}
       </Field>
 
       <Field label="Posição na barra (número menor = aparece primeiro)">
