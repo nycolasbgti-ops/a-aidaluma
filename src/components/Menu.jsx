@@ -57,7 +57,10 @@ export default function Menu({ categories, byCategory, onSelectProduct, onCatego
           >
             {/* Cabeçalho da categoria */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl leading-none">{cat.icon}</span>
+              {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/'))
+                ? <img src={cat.icon} alt={cat.name} className="w-7 h-7 object-contain flex-shrink-0" />
+                : <span className="text-xl leading-none">{cat.icon}</span>
+              }
               <h2 className="font-bold text-white text-sm tracking-widest uppercase">
                 {cat.name}
               </h2>
