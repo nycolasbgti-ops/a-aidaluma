@@ -1,129 +1,267 @@
-export const CRUST_FLAVORS = [
-  { key: 'none',     label: 'Sem borda',         price: 0 },
-  { key: 'catupiry', label: 'Borda de Catupiry', price: 6 },
-  { key: 'cheddar',  label: 'Borda de Cheddar',  price: 6 },
-]
-
 export const ADMIN_PIN = '1234'
 
-export const categories = [
-  { id: 'pizzas',      name: 'Pizzas',      icon: '🍕' },
-  { id: 'bebidas',     name: 'Bebidas',     icon: '🥤' },
-  { id: 'sobremesas',  name: 'Sobremesas',  icon: '🍰' },
+// ── Massas (Passo 1 do builder) ─────────────────────────────────
+export const ACAI_BASES = [
+  { key: 'tradicional', label: 'Açaí Tradicional',    description: 'Puro açaí cremoso da Amazônia' },
+  { key: 'morango',     label: 'Sorvete de Morango',  description: 'Cremoso e refrescante' },
+  { key: 'casadinho',   label: 'Casadinho',            description: 'Açaí + Creme de baunilha' },
+  { key: 'cupuacu',     label: 'Açaí com Cupuaçu',    description: 'Combinação amazônica irresistível' },
 ]
 
+// ── Acompanhamentos grátis (Passo 2) ────────────────────────────
+export const ACAI_TOPPINGS = [
+  { key: 'leite-ninho',      label: 'Leite Ninho' },
+  { key: 'pacoca',           label: 'Paçoca' },
+  { key: 'morango',          label: 'Morango' },
+  { key: 'banana',           label: 'Banana' },
+  { key: 'granola',          label: 'Granola' },
+  { key: 'leite-condensado', label: 'Leite Condensado' },
+  { key: 'amendoim',         label: 'Amendoim' },
+  { key: 'mel',              label: 'Mel' },
+  { key: 'coco',             label: 'Coco Ralado' },
+  { key: 'confete',          label: 'Confete' },
+]
+
+// ── Adicionais pagos (Passo 3) ───────────────────────────────────
+export const ACAI_EXTRAS = [
+  { key: 'nutella',   label: 'Nutella',           price: 4.00 },
+  { key: 'pistache',  label: 'Creme de Pistache', price: 5.00 },
+  { key: 'chocoball', label: 'Chocoball',          price: 2.50 },
+  { key: 'bis',       label: 'Bis Triturado',      price: 2.00 },
+]
+
+// ── Categorias ──────────────────────────────────────────────────
+// is_builder: true → abre o AcaiBuilderModal ao clicar no produto
+export const categories = [
+  { id: 'monte-seu-acai', name: 'Monte seu Açaí',  icon: '🍧', is_builder: true },
+  { id: 'acai-na-barca',  name: 'Açaí na Barca',   icon: '🛶',  is_builder: true },
+  { id: 'marmitas',       name: 'Marmitas',         icon: '📦',  is_builder: true },
+  { id: 'vitamina',       name: 'Vitamina de Açaí', icon: '🥤' },
+  { id: 'combos',         name: 'Combos',           icon: '🎁' },
+  { id: 'milkshake',      name: 'Milk Shake',       icon: '🥛' },
+  { id: 'picoles',        name: 'Picolés',          icon: '🍭' },
+  { id: 'bebidas',        name: 'Bebidas',          icon: '🧃' },
+]
+
+// ── Produtos ─────────────────────────────────────────────────────
+// free_toppings: N → até N acompanhamentos grátis; -1 → ilimitado
 export const products = [
-  // ── PIZZAS SALGADAS ──────────────────────────────────────────
-  { id: '01-mussarela',        category: 'pizzas', sweet: false, emoji: '🧀', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '01 - Mussarela',           description: 'Molho de tomate, queijo mussarela, orégano, azeitona.' },
-  { id: '02-marguerita',       category: 'pizzas', sweet: false, emoji: '🍅', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '02 - Marguerita',           description: 'Molho de tomate, queijo mussarela, tomate, manjericão, orégano, azeitona.' },
-  { id: '03-calabresa',        category: 'pizzas', sweet: false, emoji: '🌶️', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '03 - Calabresa',            description: 'Molho de tomate, queijo mussarela, calabresa fatiada, cebola fatiada, orégano, azeitona.' },
-  { id: '04-calabresa-catupiry',category: 'pizzas', sweet: false, emoji: '🌶️', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '04 - Calabresa com Catupiry', description: 'Molho de tomate, queijo mussarela, calabresa fatiada, catupiry, cebola fatiada, orégano, azeitona.' },
-  { id: '05-file-mignon',      category: 'pizzas', sweet: false, emoji: '🥩', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '05 - Filé Mignon',          description: 'Molho de tomate, queijo mussarela, filé mignon, alho frito, catupiry, bacon, orégano, azeitona.' },
-  { id: '06-alho-poro',        category: 'pizzas', sweet: false, emoji: '🥓', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '06 - Alho Poró',            description: 'Molho de tomate, alho poró, alho frito, bacon, queijo mussarela, tomate cereja, catupiry, orégano, azeitona.' },
-  { id: '07-carne-seca-1',     category: 'pizzas', sweet: false, emoji: '🥩', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '07 - Carne Seca',           description: 'Molho de tomate, carne seca, queijo mussarela, cebola fatiada, catupiry, orégano, azeitona.' },
-  { id: '08-atum',             category: 'pizzas', sweet: false, emoji: '🐟', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '08 - Atum',                 description: 'Molho de tomate, queijo mussarela, atum, cebola fatiada, orégano, azeitona.' },
-  { id: '09-quatro-queijos-1', category: 'pizzas', sweet: false, emoji: '🧀', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '09 - Quatro Queijos 1',     description: 'Molho de tomate, queijo mussarela, queijo provolone, queijo gorgonzola, queijo parmesão, orégano, azeitona.' },
-  { id: '10-palmito',          category: 'pizzas', sweet: false, emoji: '🌿', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '10 - Palmito',              description: 'Molho de tomate, palmito, queijo mussarela, bacon, tomate cereja, catupiry, orégano, azeitona.' },
-  { id: '11-abobrinha',        category: 'pizzas', sweet: false, emoji: '🥒', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '11 - Abobrinha',            description: 'Molho de tomate, abobrinha, bacon, tomate cereja, queijo mussarela, catupiry, orégano, azeitona.' },
-  { id: '12-baiana',           category: 'pizzas', sweet: false, emoji: '🔥', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '12 - Baiana',               description: 'Molho de tomate, queijo mussarela, cebola fatiada, calabresa moída, pimenta dedo de moça, orégano, azeitona.' },
-  { id: '13-toscana',          category: 'pizzas', sweet: false, emoji: '🌶️', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '13 - Toscana',              description: 'Molho de tomate, linguiça toscana, queijo mussarela, vinagrete de tomate, pimenta biquinho, orégano, azeitona.' },
-  { id: '14-frango-catupiry',  category: 'pizzas', sweet: false, emoji: '🍗', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '14 - Frango com Catupiry',  description: 'Molho de tomate, frango desfiado, queijo mussarela, tomate cereja, catupiry, orégano e azeitona.' },
-  { id: '15-carne-seca-2',     category: 'pizzas', sweet: false, emoji: '🥩', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '15 - Carne Seca',           description: 'Molho de tomate, queijo mussarela, carne seca, cebola, catupiry, alho frito, orégano e azeitona.' },
-  { id: '16-portuguesa',       category: 'pizzas', sweet: false, emoji: '🫒', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '16 - Portuguesa',           description: 'Molho de tomate, presunto fatiado, ervilha fresca, cebola fatiada, palmito, ovo cozido, tomate e presunto.' },
-  { id: '17-brocolis',         category: 'pizzas', sweet: false, emoji: '🥦', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '17 - Brócolis',             description: 'Molho de tomate, brócolis, bacon, tomate cereja, alho frito, catupiry, orégano e azeitona.' },
-  { id: '18-quatro-queijos-2', category: 'pizzas', sweet: false, emoji: '🧀', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '18 - Quatro Queijos 2',     description: 'Molho de tomate, queijo mussarela, queijo provolone, catupiry, queijo parmesão, orégano, azeitona.' },
-  { id: '19-bacon',            category: 'pizzas', sweet: false, emoji: '🥓', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '19 - Bacon',                description: 'Molho de tomate, bacon, tomate cereja, queijo mussarela, catupiry, orégano, azeitona.' },
-  { id: '20-pepperoni',        category: 'pizzas', sweet: false, emoji: '🍕', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '20 - Pepperoni',            description: 'Molho de tomate, queijo mussarela, pepperoni, orégano, azeitona.' },
-  { id: '21-lombo',            category: 'pizzas', sweet: false, emoji: '🥩', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '21 - Lombo',                description: 'Molho de tomate, queijo mussarela, lombo, catupiry, tomate cereja, orégano, azeitona.' },
-  { id: '22-bauru',            category: 'pizzas', sweet: false, emoji: '🍖', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '22 - Bauru',                description: 'Molho de tomate, presunto, queijo mussarela, tomate, orégano e azeitona.' },
-  { id: '23-tomate-seco',      category: 'pizzas', sweet: false, emoji: '🍅', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '23 - Tomate Seco',          description: 'Molho de tomate, queijo mussarela, alho frito, rúcula fresca, mussarela de búfala.' },
-  { id: '24-moda-da-casa',     category: 'pizzas', sweet: false, emoji: '⭐', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '24 - Moda da Casa',         description: 'Molho de tomate, queijo mussarela, frango desfiado, bacon, palmito, tomate cereja, catupiry, orégano e azeitona.' },
-  { id: '25-vegetariana',      category: 'pizzas', sweet: false, emoji: '🥦', prices: { P: 30, M: 40, G: 50 }, price: 40, name: '25 - Vegetariana',          description: 'Molho de tomate, berinjela, pimentão amarelo e vermelho, abobrinha, queijo mussarela, orégano e azeitona.' },
 
-  // ── PIZZAS DOCES ────────────────────────────────────────────
-  { id: 'doce-01-banana',      category: 'pizzas', sweet: true,  emoji: '🍌', prices: { P: 30, M: 40, G: 50 }, price: 40, name: 'Banana com Doce de Leite', description: 'Doce de leite, banana fatiada, creme branco, canela com açúcar.' },
-
-  // ── BEBIDAS ─────────────────────────────────────────────────
+  // ── MONTE SEU AÇAÍ ───────────────────────────────────────────
   {
-    id: 101,
-    category: 'bebidas',
-    name: 'Coca-Cola Lata',
-    description: '350ml gelada.',
-    price: 6.00,
+    id: 'acai-kids',
+    category_id: 'monte-seu-acai',
+    name: 'Kids',
+    description: 'Para os pequenos. Até 2 acompanhamentos grátis.',
+    prices: { unique: 12.00 },
+    free_toppings: 2,
+    emoji: '🍧',
+  },
+  {
+    id: 'acai-300ml',
+    category_id: 'monte-seu-acai',
+    name: 'Copo 300ml',
+    description: 'Perfeito para um lanche. Até 4 acompanhamentos grátis.',
+    prices: { unique: 21.00 },
+    free_toppings: 4,
+    emoji: '🍧',
+  },
+  {
+    id: 'acai-400ml',
+    category_id: 'monte-seu-acai',
+    name: 'Copo 400ml',
+    description: 'O tamanho ideal. Até 6 acompanhamentos grátis.',
+    prices: { unique: 26.00 },
+    free_toppings: 6,
+    emoji: '🍧',
+  },
+  {
+    id: 'acai-500ml',
+    category_id: 'monte-seu-acai',
+    name: 'Copo 500ml',
+    description: 'Para quem ama açaí. Até 8 acompanhamentos grátis.',
+    prices: { unique: 31.00 },
+    free_toppings: 8,
+    emoji: '🍧',
+  },
+  {
+    id: 'acai-700ml',
+    category_id: 'monte-seu-acai',
+    name: 'Copo 700ml',
+    description: 'O maior! Acompanhamentos à vontade.',
+    prices: { unique: 36.00 },
+    free_toppings: -1,
+    emoji: '🍧',
+  },
+
+  // ── AÇAÍ NA BARCA ────────────────────────────────────────────
+  {
+    id: 'hamburgueira-m',
+    category_id: 'acai-na-barca',
+    name: 'Hamburgueira M',
+    description: 'Barca redonda média. Até 5 acompanhamentos grátis.',
+    prices: { unique: 27.00 },
+    free_toppings: 5,
+    emoji: '🛶',
+  },
+  {
+    id: 'hamburgueira-g',
+    category_id: 'acai-na-barca',
+    name: 'Hamburgueira G',
+    description: 'Barca redonda grande. Acompanhamentos à vontade.',
+    prices: { unique: 37.00 },
+    free_toppings: -1,
+    emoji: '🛶',
+  },
+  {
+    id: 'barca-p',
+    category_id: 'acai-na-barca',
+    name: 'Barca P',
+    description: 'Barca pequena. Até 5 acompanhamentos grátis.',
+    prices: { unique: 35.00 },
+    free_toppings: 5,
+    emoji: '🛶',
+  },
+  {
+    id: 'barca-m',
+    category_id: 'acai-na-barca',
+    name: 'Barca M',
+    description: 'Barca média. Até 7 acompanhamentos grátis.',
+    prices: { unique: 55.00 },
+    free_toppings: 7,
+    emoji: '🛶',
+  },
+
+  // ── MARMITAS ─────────────────────────────────────────────────
+  {
+    id: 'marmita-p',
+    category_id: 'marmitas',
+    name: 'Marmita P',
+    description: 'Marmita pequena. Até 5 acompanhamentos grátis.',
+    prices: { unique: 29.00 },
+    free_toppings: 5,
+    emoji: '📦',
+  },
+
+  // ── VITAMINA DE AÇAÍ ─────────────────────────────────────────
+  {
+    id: 'vitamina-300',
+    category_id: 'vitamina',
+    name: 'Vitamina 300ml',
+    description: 'Açaí batido com leite e fruta à escolha.',
+    prices: { unique: 18.00 },
     emoji: '🥤',
   },
   {
-    id: 102,
-    category: 'bebidas',
-    name: 'Coca-Cola 2 Litros',
-    description: 'Ideal para compartilhar.',
-    price: 14.00,
+    id: 'vitamina-500',
+    category_id: 'vitamina',
+    name: 'Vitamina 500ml',
+    description: 'Açaí batido com leite e fruta à escolha. Tamanho grande.',
+    prices: { unique: 24.00 },
     emoji: '🥤',
   },
+
+  // ── COMBOS ───────────────────────────────────────────────────
   {
-    id: 103,
-    category: 'bebidas',
-    name: 'Suco Natural',
-    description: 'Laranja, limão ou maracujá. 300ml, feito na hora.',
-    price: 9.00,
-    emoji: '🍊',
+    id: 'combo-casal',
+    category_id: 'combos',
+    name: 'Combo Casal',
+    description: '2x Copo 400ml com acompanhamentos à escolha.',
+    prices: { unique: 55.00 },
+    emoji: '🎁',
   },
   {
-    id: 104,
-    category: 'bebidas',
+    id: 'combo-familia',
+    category_id: 'combos',
+    name: 'Combo Família',
+    description: '1 Barca M com acompanhamentos à vontade.',
+    prices: { unique: 65.00 },
+    emoji: '🎁',
+  },
+
+  // ── MILK SHAKE ───────────────────────────────────────────────
+  {
+    id: 'shake-acai',
+    category_id: 'milkshake',
+    name: 'Shake de Açaí',
+    description: 'Cremoso milk shake de açaí. 400ml.',
+    prices: { unique: 22.00 },
+    emoji: '🥛',
+  },
+  {
+    id: 'shake-morango',
+    category_id: 'milkshake',
+    name: 'Shake de Morango',
+    description: 'Milk shake gelado de morango. 400ml.',
+    prices: { unique: 20.00 },
+    emoji: '🥛',
+  },
+  {
+    id: 'shake-chocolate',
+    category_id: 'milkshake',
+    name: 'Shake de Chocolate',
+    description: 'Milk shake cremoso de chocolate. 400ml.',
+    prices: { unique: 20.00 },
+    emoji: '🥛',
+  },
+
+  // ── PICOLÉS ──────────────────────────────────────────────────
+  {
+    id: 'picole-acai',
+    category_id: 'picoles',
+    name: 'Picolé de Açaí',
+    description: 'Picolé artesanal de açaí puro.',
+    prices: { unique: 8.00 },
+    emoji: '🍭',
+  },
+  {
+    id: 'picole-morango',
+    category_id: 'picoles',
+    name: 'Picolé de Morango',
+    description: 'Picolé cremoso de morango.',
+    prices: { unique: 7.00 },
+    emoji: '🍭',
+  },
+  {
+    id: 'picole-maracuja',
+    category_id: 'picoles',
+    name: 'Picolé de Maracujá',
+    description: 'Picolé refrescante de maracujá.',
+    prices: { unique: 7.00 },
+    emoji: '🍭',
+  },
+
+  // ── BEBIDAS ──────────────────────────────────────────────────
+  {
+    id: 'bebida-agua',
+    category_id: 'bebidas',
     name: 'Água Mineral',
     description: '500ml, com ou sem gás.',
-    price: 4.00,
+    prices: { unique: 4.00 },
     emoji: '💧',
   },
   {
-    id: 105,
-    category: 'bebidas',
-    name: 'Heineken 600ml',
-    description: 'Long neck bem gelada.',
-    price: 14.00,
-    emoji: '🍺',
+    id: 'bebida-coca-lata',
+    category_id: 'bebidas',
+    name: 'Coca-Cola Lata',
+    description: '350ml gelada.',
+    prices: { unique: 6.00 },
+    emoji: '🥤',
   },
   {
-    id: 106,
-    category: 'bebidas',
-    name: 'Guaraná Antarctica',
-    description: '350ml lata, bem gelado.',
-    price: 6.00,
-    emoji: '🟢',
-  },
-
-  // ── SOBREMESAS ───────────────────────────────────────────────
-  {
-    id: 201,
-    category: 'sobremesas',
-    name: 'Petit Gateau',
-    description: 'Bolinho de chocolate com centro derretido e sorvete de baunilha.',
-    price: 22.00,
-    emoji: '🍫',
+    id: 'bebida-coca-2l',
+    category_id: 'bebidas',
+    name: 'Coca-Cola 2 Litros',
+    description: 'Ideal para compartilhar.',
+    prices: { unique: 14.00 },
+    emoji: '🥤',
   },
   {
-    id: 202,
-    category: 'sobremesas',
-    name: 'Brownie com Sorvete',
-    description: 'Brownie de chocolate com nozes servido quente com sorvete.',
-    price: 16.00,
-    emoji: '🍫',
-  },
-  {
-    id: 203,
-    category: 'sobremesas',
-    name: 'Sorvete 2 Bolas',
-    description: 'Chocolate, baunilha ou morango. Com calda à sua escolha.',
-    price: 12.00,
-    emoji: '🍦',
-  },
-  {
-    id: 204,
-    category: 'sobremesas',
-    name: 'Churros',
-    description: 'Porção com 4 churros crocantes recheados com doce de leite.',
-    price: 18.00,
-    emoji: '🍩',
+    id: 'bebida-suco',
+    category_id: 'bebidas',
+    name: 'Suco Natural',
+    description: 'Laranja, limão ou maracujá. 300ml.',
+    prices: { unique: 9.00 },
+    emoji: '🍊',
   },
 ]

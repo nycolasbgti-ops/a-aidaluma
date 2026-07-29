@@ -10,7 +10,7 @@ const toSlug = (name) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
-const EMPTY_CAT  = { name: '', icon: '🍕', order_position: 0, is_pizza: false }
+const EMPTY_CAT  = { name: '', icon: '🍧', order_position: 0, is_builder: false }
 const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', priceM: '', priceG: '', image_url: '', active: true, order_position: 0 }
 
 // ── Currency mask helpers ─────────────────────────────────────
@@ -70,7 +70,7 @@ const inputCls = "w-full bg-[#242424] rounded-xl px-4 py-3 text-white placeholde
 function CategoryForm({ initial, onSave, onCancel, saving }) {
   const [form, setForm] = useState(
     initial
-      ? { name: initial.name, icon: initial.icon, order_position: initial.order_position, is_pizza: initial.is_pizza }
+      ? { name: initial.name, icon: initial.icon, order_position: initial.order_position, is_builder: initial.is_builder }
       : { ...EMPTY_CAT }
   )
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -94,10 +94,10 @@ function CategoryForm({ initial, onSave, onCancel, saving }) {
 
       <div className="bg-[#242424] rounded-xl p-4">
         <ToggleRow
-          label="Categoria de Pizza"
-          sub="Ativa o modal de montagem com Meio a Meio e Borda Recheada"
-          value={form.is_pizza}
-          onChange={v => set('is_pizza', v)}
+          label="Categoria com Montagem"
+          sub="Ativa o modal de montagem de Açaí (massa, acompanhamentos, adicionais)"
+          value={form.is_builder}
+          onChange={v => set('is_builder', v)}
         />
       </div>
 
@@ -345,7 +345,7 @@ export default function MenuManager() {
         slug:           toSlug(form.name),
         icon:           form.icon.trim() || '🍽️',
         order_position: parseInt(form.order_position) || 0,
-        is_pizza:       form.is_pizza,
+        is_builder:       form.is_builder,
       }
       if (editingCat) {
         await api.updateCategory(editingCat.id, payload)
@@ -640,7 +640,7 @@ export default function MenuManager() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-white">{cat.name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {cat.is_pizza ? '🍕 Pizza' : '📋 Simples'} · Ordem {cat.order_position}
+                    {cat.is_builder ? '🍧 Com montagem' : '📋 Simples'} · Ordem {cat.order_position}
                   </p>
                 </div>
                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,52 +1,34 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+// Mock API local — sem backend necessário.
+// Quando o backend estiver pronto, substitua por chamadas HTTP reais.
+// Atualize pix_key e whatsapp_number em MOCK_SETTINGS abaixo.
 
-async function request(method, path, body) {
-  const opts = { method, headers: {} }
-  if (body !== undefined) {
-    opts.headers['Content-Type'] = 'application/json'
-    opts.body = JSON.stringify(body)
-  }
-  const res = await fetch(BASE + path, opts)
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `Erro HTTP ${res.status}`)
-  }
-  if (res.status === 204) return null
-  return res.json()
+const MOCK_SETTINGS = {
+  pix_key:         '(11) 99999-9999',    // substitua pela chave Pix real
+  whatsapp_number: '5511999999999',       // substitua pelo número real (ex: 5511987654321)
 }
 
 export const api = {
   // ── Público ──────────────────────────────────────────────────
-  getMenu:       ()           => request('GET',   '/api/menu'),
-  createOrder:   (body)       => request('POST',  '/api/orders', body),
-
-  // ── Admin: Pedidos ────────────────────────────────────────────
-  getOrders:     ()           => request('GET',   '/api/orders'),
-  updateOrder:   (id, body)   => request('PATCH', `/api/orders/${id}`, body),
-  ordersEvents:  ()           => new EventSource(`${BASE}/api/orders/events`),
-
-  // ── Admin: Categorias ─────────────────────────────────────────
-  getCategories:  ()           => request('GET',    '/api/categories'),
-  createCategory: (body)       => request('POST',   '/api/categories', body),
-  updateCategory: (id, body)   => request('PATCH',  `/api/categories/${id}`, body),
-  deleteCategory: (id)         => request('DELETE', `/api/categories/${id}`),
-
-  // ── Admin: Produtos ───────────────────────────────────────────
-  getProducts:   (catId)      => request('GET',    `/api/products?category_id=${catId}`),
-  createProduct: (body)       => request('POST',   '/api/products', body),
-  updateProduct: (id, body)   => request('PATCH',  `/api/products/${id}`, body),
-  deleteProduct: (id)         => request('DELETE', `/api/products/${id}`),
-
-  // ── Admin: Configurações ──────────────────────────────────────
-  getSettings:    ()           => request('GET',   '/api/settings'),
-  updateSettings: (body)       => request('PATCH', '/api/settings', body),
-
-  // ── Admin: Upload de imagem ───────────────────────────────────
-  uploadImage: async (file) => {
-    const form = new FormData()
-    form.append('image', file)
-    const res = await fetch(`${BASE}/api/upload`, { method: 'POST', body: form })
-    if (!res.ok) throw new Error(`Erro no upload: HTTP ${res.status}`)
-    return res.json()
+  createOrder: async (data) => {
+    await new Promise(resolve => setTimeout(resolve, 700))
+    return { ...data, id: `${Date.now()}` }
   },
+
+  getSettings: async () => ({ ...MOCK_SETTINGS }),
+
+  // ── Admin (offline — ative quando o backend estiver rodando) ──
+  getMenu:        async () => { throw new Error('Backend offline') },
+  getOrders:      async () => { throw new Error('Backend offline') },
+  updateOrder:    async () => { throw new Error('Backend offline') },
+  ordersEvents:   ()       => { throw new Error('Backend offline') },
+  getCategories:  async () => { throw new Error('Backend offline') },
+  createCategory: async () => { throw new Error('Backend offline') },
+  updateCategory: async () => { throw new Error('Backend offline') },
+  deleteCategory: async () => { throw new Error('Backend offline') },
+  getProducts:    async () => { throw new Error('Backend offline') },
+  createProduct:  async () => { throw new Error('Backend offline') },
+  updateProduct:  async () => { throw new Error('Backend offline') },
+  deleteProduct:  async () => { throw new Error('Backend offline') },
+  updateSettings: async () => { throw new Error('Backend offline') },
+  uploadImage:    async () => { throw new Error('Backend offline') },
 }

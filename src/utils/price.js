@@ -20,17 +20,3 @@ export const getPrice = (prices, size) => {
   if (size && prices[size] !== undefined) return Number(prices[size])
   return Number(prices.M ?? prices.P ?? prices.G ?? 0)
 }
-
-export const SIZES = [
-  { key: 'P', label: 'Pequena' },
-  { key: 'M', label: 'Média'   },
-  { key: 'G', label: 'Grande'  },
-]
-
-// Tamanho inicial padrão (M → G → P → null para preço único)
-export const defaultSize = (prices) => {
-  if (!hasSizes(prices)) return null
-  if (prices.M !== undefined) return 'M'
-  if (prices.G !== undefined) return 'G'
-  return 'P'
-}

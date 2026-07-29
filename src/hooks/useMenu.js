@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
-import { api } from '../api'
+import { categories as mockCategories, products as mockProducts } from '../data/menu'
 
-const POLL_INTERVAL = 30_000
-
+// API desconectada — dados servidos localmente enquanto o backend não está configurado
 export function useMenu() {
   const [categories, setCategories] = useState([])
   const [products,   setProducts]   = useState([])
@@ -10,28 +9,11 @@ export function useMenu() {
   const [error,      setError]      = useState(null)
 
   useEffect(() => {
-    let mounted = true
-
-    const load = async () => {
-      try {
-        const { categories: cats, products: prods } = await api.getMenu()
-        if (!mounted) return
-        setCategories(cats)
-        setProducts(prods)
-        setError(null)
-      } catch (e) {
-        if (mounted) setError(e.message)
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-
-    load()
-    const interval = setInterval(load, POLL_INTERVAL)
-    return () => { mounted = false; clearInterval(interval) }
+    setCategories(mockCategories)
+    setProducts(mockProducts)
+    setLoading(false)
   }, [])
 
-  // Produtos agrupados por category_id para acesso O(1)
   const byCategory = products.reduce((acc, p) => {
     if (!acc[p.category_id]) acc[p.category_id] = []
     acc[p.category_id].push(p)

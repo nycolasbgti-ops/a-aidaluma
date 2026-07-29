@@ -2,11 +2,12 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { useMenu } from './hooks/useMenu'
 import Header from './components/Header'
 import CategoryTabs from './components/CategoryTabs'
-import ProductCard from './components/ProductCard'
-import PizzaBuilderModal from './components/PizzaBuilderModal'
+import Menu from './components/Menu'
+import AcaiBuilderModal from './components/AcaiBuilderModal'
 import CartBottomSheet from './components/CartBottomSheet'
 import CheckoutView from './components/CheckoutView'
 import ConfirmationView from './components/ConfirmationView'
+import BottomNav from './components/BottomNav'
 import AdminLogin from './components/admin/AdminLogin'
 import AdminPanel from './components/admin/AdminPanel'
 import { ADMIN_PIN } from './data/menu'
@@ -22,6 +23,7 @@ export default function App() {
   const [confirmedOrder, setConfirmedOrder] = useState(null)
   const [showAdminLogin, setAdminLogin]    = useState(false)
   const [adminAuthed,    setAdminAuthed]   = useState(false)
+  const [navTab,         setNavTab]        = useState('home')
 
   // Link secreto: ?admin na URL abre o login sem botão visível na interface
   useEffect(() => {
@@ -37,22 +39,24 @@ export default function App() {
     }
   }, [categories, activeCatId])
 
-  const activeCategory  = categories.find(c => c.id === activeCatId) ?? null
-  const shownProducts   = byCategory[activeCatId] ?? []
+  const activeCategory = categories.find(c => c.id === activeCatId) ?? null
+  const shownProducts  = byCategory[activeCatId] ?? []
 
-  // ── Cart ────────────────────────────────────────────────────
+  // ── Cart ─────────────────────────────────────────────────────
   const addToCart = useCallback((item) => {
     setCart(prev => {
-      if (item.type === 'pizza') {
+      // Açaí montado: cada pedido é único (customização diferente)
+      if (item.type === 'acai') {
         return [...prev, { ...item, cartId: Date.now() + Math.random() }]
       }
+      // Item simples: incrementa qty se já está no carrinho
       const existing = prev.find(i => i.id === item.id)
       if (existing) {
         return prev.map(i => i.cartId === existing.cartId ? { ...i, qty: (i.qty || 1) + 1 } : i)
       }
       return [...prev, { ...item, cartId: Date.now() + Math.random(), qty: 1 }]
     })
-    setCartOpen(true)
+    setNavTab('home')
   }, [])
 
   const updateQty = useCallback((cartId, delta) => {
@@ -72,11 +76,10 @@ export default function App() {
 
   // ── Handlers ─────────────────────────────────────────────────
   const handleProductClick = (product) => {
-    if (activeCategory?.is_pizza) {
+    if (activeCategory?.is_builder) {
       setBuilder({ open: true, product })
     } else {
-      // Item simples: preço único, adiciona direto
-      const price = Number(product.prices?.unique ?? 0)
+      const price = Number(product.prices?.unique ?? product.price ?? 0)
       addToCart({ ...product, type: 'other', price, qty: 1 })
     }
   }
@@ -106,16 +109,16 @@ export default function App() {
     return <CheckoutView cart={cart} total={cartTotal} onBack={() => setView('menu')} onConfirm={handleOrderConfirmed} />
   }
   if (view === 'confirmation') {
-    return <ConfirmationView order={confirmedOrder} onNewOrder={() => { setConfirmedOrder(null); setView('menu') }} />
+    return <ConfirmationView order={confirmedOrder} onNewOrder={() => { setConfirmedOrder(null); setView('menu'); setNavTab('home') }} />
   }
 
   // ── Menu principal ────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-[#07011A] text-white flex flex-col">
       <Header
         cartCount={cartCount}
         cartTotal={cartTotal}
-        onCartClick={() => setCartOpen(true)}
+        onCartClick={() => { setCartOpen(true); setNavTab('cart') }}
       />
 
       {loading ? (
@@ -130,30 +133,21 @@ export default function App() {
             onChange={setActiveCatId}
           />
 
-<main className="px-4 py-4 pb-32 space-y-3 max-w-lg mx-auto">
-            {shownProducts.length === 0 ? (
-              <div className="text-center py-20">
-                <span className="text-5xl block mb-4">🍽️</span>
-                <p className="text-gray-500 font-medium">Nenhum produto nesta categoria.</p>
-                <p className="text-gray-600 text-sm mt-1">Adicione produtos pelo Painel Admin.</p>
-              </div>
-            ) : (
-              shownProducts.map(product => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onClick={() => handleProductClick(product)}
-                />
-              ))
-            )}
+          <main className="flex-1 overflow-y-auto">
+            <Menu
+              categories={categories}
+              byCategory={byCategory}
+              activeCatId={activeCatId}
+              onSelectProduct={handleProductClick}
+              isBuilder={activeCategory?.is_builder}
+            />
           </main>
         </>
       )}
 
       {builder.open && (
-        <PizzaBuilderModal
-          pizza={builder.product}
-          allPizzas={shownProducts}
+        <AcaiBuilderModal
+          product={builder.product}
           onClose={() => setBuilder({ open: false, product: null })}
           onAdd={(item) => {
             addToCart(item)
@@ -172,6 +166,14 @@ export default function App() {
         onCheckout={() => { setCartOpen(false); setView('checkout') }}
       />
 
+      <BottomNav
+        cartCount={cartCount}
+        onHomeClick={() => setNavTab('home')}
+        onCartClick={() => { setCartOpen(true); setNavTab('cart') }}
+        onProfileClick={() => setNavTab('profile')}
+        activeTab={navTab}
+      />
+
       {showAdminLogin && (
         <AdminLogin onLogin={handleAdminLogin} onClose={() => setAdminLogin(false)} />
       )}
@@ -182,7 +184,7 @@ export default function App() {
 function LoadingState() {
   return (
     <div className="flex flex-col items-center justify-center pt-24 gap-4">
-      <div className="w-10 h-10 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+      <div className="w-10 h-10 border-2 border-[#DB2777] border-t-transparent rounded-full animate-spin" />
       <p className="text-sm text-gray-500">Carregando cardápio...</p>
     </div>
   )
@@ -193,7 +195,7 @@ function ErrorState({ message }) {
     <div className="px-6 pt-24 text-center">
       <span className="text-5xl block mb-4">⚠️</span>
       <p className="text-gray-300 font-semibold mb-2">Não foi possível carregar o cardápio</p>
-      <p className="text-gray-600 text-xs font-mono bg-[#1A1A1A] rounded-xl px-4 py-3 mt-3 text-left break-all">
+      <p className="text-gray-600 text-xs font-mono bg-[#1A0B2E] rounded-xl px-4 py-3 mt-3 text-left break-all">
         {message}
       </p>
       <p className="text-gray-600 text-sm mt-4">Verifique se a API está rodando em <code>VITE_API_URL</code>.</p>

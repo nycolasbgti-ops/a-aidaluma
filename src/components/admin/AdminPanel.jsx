@@ -3,7 +3,7 @@ import { api } from '../../api'
 import { fmt } from '../../utils/price'
 import MenuManager from './MenuManager'
 
-const N8N_WEBHOOK_URL = 'http://179.197.78.71:5678/webhook/saiu-entrega'
+const N8N_WEBHOOK_URL = 'https://n8n.nycolasdev.com.br/webhook/saiu-entrega'
 
 function formatPhone(raw) {
   const digits = String(raw || '').replace(/\D/g, '')
@@ -40,14 +40,18 @@ function buildComanda(order) {
   const pay = PAYMENT_LABELS[order.payment_method] || order.payment_method
 
   const itemLines = (order.items || []).flatMap(item => {
-    const line = [`${item.qty || 1}x ${item.name}`]
-    if (item.crustLabel) line.push(`  Borda: ${item.crustLabel}`)
-    return line
+    const lines = [`${item.qty || 1}x ${item.name}`]
+    if (item.type === 'acai') {
+      if (item.base)             lines.push(`  Massa: ${item.base.label}`)
+      if (item.toppings?.length) lines.push(`  Acomp: ${item.toppings.map(t => t.label).join(', ')}`)
+      if (item.extras?.length)   lines.push(`  Extras: ${item.extras.map(e => e.label).join(', ')}`)
+    }
+    return lines
   }).join('\n')
 
   const parts = [
     sep,
-    '        PIZZARIA IMPÉRIO',
+    '          AÇAITERIA',
     sep,
     `Pedido: #${id4}`,
     '',
@@ -103,7 +107,7 @@ function PrintModal({ order, onClose }) {
             rows={14}
             spellCheck={false}
             className="w-full bg-[#242424] rounded-xl px-3 py-3 font-mono text-xs text-gray-200
-                       outline-none focus:ring-2 focus:ring-[#D4AF37] resize-none leading-relaxed transition-all"
+                       outline-none focus:ring-2 focus:ring-purple-700 resize-none leading-relaxed transition-all"
           />
         </div>
 
@@ -113,8 +117,8 @@ function PrintModal({ order, onClose }) {
             Cancelar
           </button>
           <button onClick={handlePrint}
-            className="flex-1 py-3.5 bg-[#D4AF37] text-[#0A0A0A] rounded-2xl text-sm font-bold
-                       active:scale-95 transition-all shadow-md shadow-[#D4AF37]/30 flex items-center justify-center gap-2">
+            className="flex-1 py-3.5 bg-purple-700 text-white rounded-2xl text-sm font-bold
+                       active:scale-95 transition-all shadow-md shadow-purple-900/30 flex items-center justify-center gap-2">
             🖨️ Confirmar Impressão
           </button>
         </div>
@@ -150,8 +154,8 @@ function OrderCard({ order, onAdvance, onPrint }) {
       <div className="space-y-1 mb-3">
         {(order.items || []).map((item, i) => (
           <div key={i} className="flex justify-between text-sm">
-            <span className="text-gray-300 pr-2">{item.qty || 1}× {item.name}{item.crustLabel ? ` + ${item.crustLabel}` : ''}</span>
-            <span className="text-[#D4AF37] font-medium flex-shrink-0">{fmt(item.price * (item.qty || 1))}</span>
+            <span className="text-gray-300 pr-2">{item.qty || 1}× {item.name}</span>
+            <span className="text-purple-400 font-medium flex-shrink-0">{fmt(item.price * (item.qty || 1))}</span>
           </div>
         ))}
       </div>
@@ -185,8 +189,8 @@ function OrderCard({ order, onAdvance, onPrint }) {
         </button>
         {cfg.next && (
           <button onClick={advance} disabled={busy}
-            className="flex-1 py-3 bg-[#D4AF37] rounded-xl font-bold text-sm text-[#0A0A0A]
-                       active:scale-[0.97] transition-all disabled:opacity-50 shadow-md shadow-[#D4AF37]/30">
+            className="flex-1 py-3 bg-purple-700 rounded-xl font-bold text-sm text-white
+                       active:scale-[0.97] transition-all disabled:opacity-50 shadow-md shadow-purple-900/30">
             {busy ? '...' : cfg.nextBtn}
           </button>
         )}
@@ -214,12 +218,12 @@ function OrdersPanel({ orders, loading, connOk, onAdvance, onRefetch }) {
             }`}>
             {tab.label}
             {tab.key === 'new' && newCount > 0 && (
-              <span className="ml-1 bg-[#D4AF37] text-[#0A0A0A] text-[10px] font-bold rounded-full px-1.5 py-0.5 align-middle">
+              <span className="ml-1 bg-purple-700 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 align-middle">
                 {newCount}
               </span>
             )}
             {activeTab === tab.key && (
-              <div className="absolute bottom-0 inset-x-0 h-0.5 bg-[#D4AF37] rounded-t-full" />
+              <div className="absolute bottom-0 inset-x-0 h-0.5 bg-purple-700 rounded-t-full" />
             )}
           </button>
         ))}
@@ -230,7 +234,7 @@ function OrdersPanel({ orders, loading, connOk, onAdvance, onRefetch }) {
       <div className="flex-1 overflow-y-auto px-4 py-4 max-w-lg mx-auto w-full">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="w-8 h-8 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-purple-700 border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-gray-500">Carregando pedidos...</p>
           </div>
         ) : !connOk ? (
@@ -289,11 +293,11 @@ function SettingsPanel() {
     }
   }
 
-  const inputCls = 'w-full bg-[#242424] rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm font-mono'
+  const inputCls = 'w-full bg-[#242424] rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:ring-2 focus:ring-purple-700 transition-all text-sm font-mono'
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
-      <div className="w-6 h-6 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-purple-700 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
@@ -307,7 +311,7 @@ function SettingsPanel() {
       {error && <p className="text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2">{error}</p>}
 
       <div className="bg-[#1A1A1A] rounded-2xl p-4">
-        <label className="text-xs text-[#D4AF37] font-semibold uppercase tracking-widest block mb-2">💠 Chave Pix</label>
+        <label className="text-xs text-purple-400 font-semibold uppercase tracking-widest block mb-2">💠 Chave Pix</label>
         <input
           type="text"
           value={form.pix_key}
@@ -318,7 +322,7 @@ function SettingsPanel() {
       </div>
 
       <div className="bg-[#1A1A1A] rounded-2xl p-4">
-        <label className="text-xs text-[#D4AF37] font-semibold uppercase tracking-widest block mb-2">📱 Número do WhatsApp</label>
+        <label className="text-xs text-purple-400 font-semibold uppercase tracking-widest block mb-2">📱 Número do WhatsApp</label>
         <input
           type="text"
           value={form.whatsapp_number}
@@ -333,7 +337,7 @@ function SettingsPanel() {
         onClick={handleSave}
         disabled={saving}
         className={`w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 ${
-          saved ? 'bg-green-500 text-white' : 'bg-[#D4AF37] text-[#0A0A0A] shadow-md shadow-[#D4AF37]/30'
+          saved ? 'bg-green-500 text-white' : 'bg-purple-700 text-white shadow-md shadow-purple-900/30'
         }`}
       >
         {saving ? 'Salvando...' : saved ? '✓ Salvo com sucesso!' : 'Salvar Configurações'}
@@ -346,7 +350,7 @@ function SettingsPanel() {
 
 const MAIN_TABS = [
   { key: 'orders',   label: '📋 Pedidos'       },
-  { key: 'menu',     label: '🍕 Cardápio'      },
+  { key: 'menu',     label: '🍧 Cardápio'      },
   { key: 'settings', label: '⚙️ Configurações' },
 ]
 
@@ -386,9 +390,11 @@ export default function AdminPanel({ onBack }) {
       await api.updateOrder(order.id, { status })
 
       if (status === 'delivering') {
-        const pedido = (order.items || [])
-          .map(item => `${item.qty || 1}x ${item.name}${item.crustLabel ? ` + ${item.crustLabel}` : ''}`)
-          .join(', ')
+        const pedido = (order.items || []).map(item => {
+          let detail = item.name
+          if (item.type === 'acai' && item.base) detail += ` (${item.base.label})`
+          return `${item.qty || 1}x ${detail}`
+        }).join(', ')
 
         fetch(N8N_WEBHOOK_URL, {
           method: 'POST',
@@ -413,7 +419,7 @@ export default function AdminPanel({ onBack }) {
       <div className="sticky top-0 z-10 bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/5
                       px-4 h-16 flex items-center gap-3">
         <div className="flex-1">
-          <h1 className="text-lg font-bold leading-tight">Painel da Pizzaria</h1>
+          <h1 className="text-lg font-bold leading-tight">Painel Admin</h1>
           <p className="text-xs text-gray-500">
             {{ orders: 'Pedidos em tempo real', menu: 'Gerenciar cardápio', settings: 'Chave Pix e WhatsApp' }[mainTab]}
           </p>
@@ -435,12 +441,12 @@ export default function AdminPanel({ onBack }) {
             }`}>
             {tab.label}
             {tab.key === 'orders' && newCount > 0 && (
-              <span className="ml-1 bg-[#D4AF37] text-[#0A0A0A] text-[10px] font-bold rounded-full px-1.5 py-0.5 align-middle">
+              <span className="ml-1 bg-purple-700 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 align-middle">
                 {newCount}
               </span>
             )}
             {mainTab === tab.key && (
-              <div className="absolute bottom-0 inset-x-0 h-0.5 bg-[#D4AF37] rounded-t-full" />
+              <div className="absolute bottom-0 inset-x-0 h-0.5 bg-purple-700 rounded-t-full" />
             )}
           </button>
         ))}

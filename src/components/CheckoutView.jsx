@@ -9,6 +9,39 @@ const PAYMENT_OPTIONS = [
   { value: 'cash',   label: '💵 Dinheiro' },
 ]
 
+function ItemSummaryLine({ item }) {
+  const qty = item.qty || 1
+  return (
+    <div className="py-1.5 border-b border-white/5 last:border-0">
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-300 pr-2">
+          {qty}× {item.name}
+        </span>
+        <span className="text-[#DB2777] font-semibold flex-shrink-0">
+          {fmt(item.price * qty)}
+        </span>
+      </div>
+      {item.type === 'acai' && (
+        <div className="mt-0.5 space-y-0.5">
+          {item.base && (
+            <p className="text-xs text-gray-500">🍧 {item.base.label}</p>
+          )}
+          {item.toppings?.length > 0 && (
+            <p className="text-xs text-gray-600">
+              + {item.toppings.map(t => t.label).join(', ')}
+            </p>
+          )}
+          {item.extras?.length > 0 && (
+            <p className="text-xs text-gray-600">
+              ✨ {item.extras.map(e => e.label).join(', ')}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CheckoutView({ cart, total, onBack, onConfirm }) {
   const [form, setForm] = useState({
     name: '',
@@ -61,11 +94,11 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col">
+    <div className="min-h-screen bg-[#07011A] text-white flex flex-col">
       {/* Nav */}
-      <div className="sticky top-0 z-10 bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/5
+      <div className="sticky top-0 z-10 bg-[#07011A]/95 backdrop-blur-xl border-b border-white/5
                       px-4 h-16 flex items-center gap-3">
-        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center -ml-1">
+        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center -ml-1 text-[#DB2777]">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -80,18 +113,10 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 max-w-lg mx-auto w-full pb-36">
 
         {/* Summary */}
-        <section className="bg-[#1A1A1A] rounded-2xl p-4">
+        <section className="bg-[#0F0320] rounded-2xl p-4 border border-purple-800/20">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Resumo</p>
           {cart.map(item => (
-            <div key={item.cartId} className="flex justify-between text-sm py-1.5 border-b border-white/5 last:border-0">
-              <span className="text-gray-300 pr-2">
-                {item.qty || 1}× {item.name}
-                {item.crustLabel ? ` + ${item.crustLabel}` : ''}
-              </span>
-              <span className="text-[#D4AF37] font-semibold flex-shrink-0">
-                {fmt(item.price * (item.qty || 1))}
-              </span>
-            </div>
+            <ItemSummaryLine key={item.cartId} item={item} />
           ))}
           <div className="flex justify-between mt-3 pt-3 border-t border-white/5 font-bold text-base">
             <span>Total</span>
@@ -100,7 +125,7 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
         </section>
 
         {/* Personal data */}
-        <section className="bg-[#1A1A1A] rounded-2xl p-4 space-y-4">
+        <section className="bg-[#0F0320] rounded-2xl p-4 space-y-4 border border-purple-800/20">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Seus dados</p>
 
           <div>
@@ -111,8 +136,8 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
               value={form.name}
               onChange={e => set('name', e.target.value)}
               placeholder="João Silva"
-              className="w-full bg-[#242424] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
-                         outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm"
+              className="w-full bg-[#1A0B2E] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
+                         outline-none focus:ring-2 focus:ring-[#DB2777] transition-all text-sm border border-purple-800/20"
             />
           </div>
 
@@ -124,28 +149,28 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
               value={form.phone}
               onChange={e => set('phone', e.target.value)}
               placeholder="(11) 99999-9999"
-              className="w-full bg-[#242424] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
-                         outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm"
+              className="w-full bg-[#1A0B2E] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
+                         outline-none focus:ring-2 focus:ring-[#DB2777] transition-all text-sm border border-purple-800/20"
             />
           </div>
         </section>
 
         {/* Delivery */}
-        <section className="bg-[#1A1A1A] rounded-2xl p-4 space-y-4">
+        <section className="bg-[#0F0320] rounded-2xl p-4 space-y-4 border border-purple-800/20">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Entrega</p>
 
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: 'delivery', label: '🛵 Entrega', sub: 'No seu endereço' },
-              { value: 'pickup',   label: '🏪 Retirada', sub: 'Na pizzaria' },
+              { value: 'delivery', label: '🛵 Entrega',  sub: 'No seu endereço' },
+              { value: 'pickup',   label: '🏪 Retirada', sub: 'Na loja' },
             ].map(opt => (
               <button
                 key={opt.value}
                 onClick={() => set('deliveryType', opt.value)}
                 className={`py-3.5 px-4 rounded-2xl text-left transition-all border ${
                   form.deliveryType === opt.value
-                    ? 'bg-[#D4AF37]/15 border-[#D4AF37]'
-                    : 'bg-[#242424] border-transparent'
+                    ? 'bg-[#DB2777]/20 border-[#DB2777]'
+                    : 'bg-[#1A0B2E] border-purple-800/20'
                 }`}
               >
                 <p className="font-semibold text-sm">{opt.label}</p>
@@ -162,15 +187,15 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
                 onChange={e => set('address', e.target.value)}
                 placeholder="Rua, número, bairro, complemento..."
                 rows={3}
-                className="w-full bg-[#242424] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
-                           outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all resize-none text-sm"
+                className="w-full bg-[#1A0B2E] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
+                           outline-none focus:ring-2 focus:ring-[#DB2777] transition-all resize-none text-sm border border-purple-800/20"
               />
             </div>
           )}
         </section>
 
         {/* Payment */}
-        <section className="bg-[#1A1A1A] rounded-2xl p-4 space-y-3">
+        <section className="bg-[#0F0320] rounded-2xl p-4 space-y-3 border border-purple-800/20">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Pagamento</p>
 
           <div className="grid grid-cols-2 gap-2">
@@ -180,8 +205,8 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
                 onClick={() => set('payment', opt.value)}
                 className={`py-3.5 px-4 rounded-2xl text-left transition-all border ${
                   form.payment === opt.value
-                    ? 'bg-[#D4AF37]/15 border-[#D4AF37]'
-                    : 'bg-[#242424] border-transparent'
+                    ? 'bg-[#DB2777]/20 border-[#DB2777]'
+                    : 'bg-[#1A0B2E] border-purple-800/20'
                 }`}
               >
                 <p className="font-semibold text-sm">{opt.label}</p>
@@ -197,31 +222,31 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
                 value={form.changeFor}
                 onChange={e => set('changeFor', e.target.value)}
                 placeholder="Ex: R$ 100,00"
-                className="w-full bg-[#242424] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
-                           outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm"
+                className="w-full bg-[#1A0B2E] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
+                           outline-none focus:ring-2 focus:ring-[#DB2777] transition-all text-sm border border-purple-800/20"
               />
             </div>
           )}
         </section>
 
         {/* Notes */}
-        <section className="bg-[#1A1A1A] rounded-2xl p-4">
+        <section className="bg-[#0F0320] rounded-2xl p-4 border border-purple-800/20">
           <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest block mb-3">
             Observações (opcional)
           </label>
           <textarea
             value={form.notes}
             onChange={e => set('notes', e.target.value)}
-            placeholder="Sem cebola, ponto da carne, alguma alergia..."
+            placeholder="Alguma alergia, sem granola, ponto específico..."
             rows={2}
-            className="w-full bg-[#242424] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
-                       outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all resize-none text-sm"
+            className="w-full bg-[#1A0B2E] rounded-xl px-4 py-3.5 text-white placeholder-gray-600
+                       outline-none focus:ring-2 focus:ring-[#DB2777] transition-all resize-none text-sm border border-purple-800/20"
           />
         </section>
       </div>
 
       {/* Sticky footer CTA */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-8 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-8 bg-gradient-to-t from-[#07011A] via-[#07011A] to-transparent">
         <div className="max-w-lg mx-auto">
           {error && (
             <div className="mb-3 bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3">
@@ -231,9 +256,9 @@ export default function CheckoutView({ cart, total, onBack, onConfirm }) {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-4 bg-[#D4AF37] rounded-2xl font-bold text-[15px]
-                       text-[#0A0A0A] active:scale-[0.98] transition-all disabled:opacity-50
-                       shadow-lg shadow-[#D4AF37]/40 flex items-center justify-between px-6"
+            className="w-full py-4 bg-[#DB2777] rounded-2xl font-bold text-[15px]
+                       text-white active:scale-[0.98] transition-all disabled:opacity-50
+                       shadow-lg shadow-[#DB2777]/40 flex items-center justify-between px-6"
           >
             <span>{loading ? 'Salvando...' : 'Confirmar Pedido'}</span>
             {!loading && <span className="font-bold">{fmt(total)}</span>}
