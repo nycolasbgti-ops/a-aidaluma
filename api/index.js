@@ -197,10 +197,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
-    const { category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position, flavors } = req.body
+    const { category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position, flavors, builder_config } = req.body
     const { data, error } = await supabase
       .from('products')
-      .insert({ category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position, flavors: flavors ?? [] })
+      .insert({ category_id, name, description, prices, free_toppings, emoji, image_url, active, order_position, flavors: flavors ?? [], builder_config: builder_config ?? {} })
       .select()
       .single()
     if (error) throw error
@@ -212,7 +212,7 @@ app.post('/api/products', async (req, res) => {
 
 app.patch('/api/products/:id', async (req, res) => {
   try {
-    const allowed = ['category_id', 'name', 'description', 'prices', 'free_toppings', 'emoji', 'image_url', 'active', 'order_position', 'flavors']
+    const allowed = ['category_id', 'name', 'description', 'prices', 'free_toppings', 'emoji', 'image_url', 'active', 'order_position', 'flavors', 'builder_config']
     const patch = Object.fromEntries(
       Object.entries(req.body).filter(([k]) => allowed.includes(k))
     )

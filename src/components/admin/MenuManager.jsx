@@ -11,7 +11,7 @@ const toSlug = (name) =>
     .replace(/^-|-$/g, '')
 
 const EMPTY_CAT  = { name: '', icon: '🍧', order_position: 0, is_builder: false }
-const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', sizeLabel1: '', priceM: '', sizeLabel2: '', priceG: '', sizeLabel3: '', image_url: '', active: true, order_position: 0, flavors: [] }
+const EMPTY_PROD = { name: '', description: '', category_id: '', priceType: 'sized', priceUnique: '', priceP: '', sizeLabel1: '', priceM: '', sizeLabel2: '', priceG: '', sizeLabel3: '', image_url: '', active: true, order_position: 0, flavors: [], builder_config: { has_toppings: true, allowed_bases: [] } }
 
 // ── Currency mask helpers ─────────────────────────────────────
 
@@ -163,6 +163,7 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
   const [preview,      setPreview]      = useState(initial?.image_url || '')
   const [uploadErr,    setUploadErr]    = useState('')
   const [flavorInput,  setFlavorInput]  = useState('')
+  const [baseInput,    setBaseInput]    = useState('')
 
   const initForm = () => {
     if (!initial) return { ...EMPTY_PROD, category_id: defaultCategoryId || categories[0]?.id || '' }
@@ -183,6 +184,7 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
       active:         initial.active ?? true,
       order_position: initial.order_position ?? 0,
       flavors:        initial.flavors || [],
+      builder_config: initial.builder_config || { has_toppings: true, allowed_bases: [] },
     }
   }
 
@@ -197,6 +199,18 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
 
   const [form, setForm] = useState(initForm)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const setBuilderConfig = (key, value) =>
+    set('builder_config', { ...(form.builder_config || {}), [key]: value })
+
+  const addAllowedBase = () => {
+    const v = baseInput.trim()
+    if (!v || (form.builder_config?.allowed_bases || []).includes(v)) return
+    setBuilderConfig('allowed_bases', [...(form.builder_config?.allowed_bases || []), v])
+    setBaseInput('')
+  }
+  const removeAllowedBase = (i) =>
+    setBuilderConfig('allowed_bases', (form.builder_config?.allowed_bases || []).filter((_, idx) => idx !== i))
 
   const handlePriceChange = (key) => (e) => {
     const digits = e.target.value.replace(/\D/g, '')
@@ -370,6 +384,62 @@ function ProductForm({ initial, categories, defaultCategoryId, onSave, onCancel,
         )}
       </div>
 
+      {/* ── Regras de Montagem (só aparece se a categoria for is_builder) ── */}
+      {selectedCat?.is_builder && (
+        <div className="bg-[#1A1A1A] rounded-2xl p-4 space-y-4 border border-purple-800/30">
+          <div>
+            <p className="text-xs font-semibold text-purple-400 uppercase tracking-widest mb-0.5">⚙️ Regras de Montagem</p>
+            <p className="text-xs text-gray-600">Controle granular do builder para este produto específico.</p>
+          </div>
+
+          <ToggleRow
+            label="Caldas, Acompanhamentos e Extras"
+            sub="Desative para exibir apenas a seleção de massa (ex: Milkshakes)"
+            value={form.builder_config?.has_toppings ?? true}
+            onChange={v => setBuilderConfig('has_toppings', v)}
+          />
+
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Massas Específicas (Opcional)</label>
+            <p className="text-[11px] text-gray-600 mb-2 leading-relaxed">
+              Se vazio, usa as massas globais. Se preenchido, o cliente só poderá escolher estas opções.
+            </p>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={baseInput}
+                onChange={e => setBaseInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAllowedBase() } }}
+                placeholder="Ex: Açaí Tradicional, Morango..."
+                className="flex-1 bg-[#242424] rounded-xl px-3 py-2.5 text-white text-sm placeholder-gray-600 outline-none focus:ring-2 focus:ring-purple-700 transition-all"
+              />
+              <button
+                type="button"
+                onClick={addAllowedBase}
+                disabled={!baseInput.trim()}
+                className="px-4 py-2.5 bg-purple-700 rounded-xl text-sm font-bold disabled:opacity-40 flex-shrink-0 active:scale-95 transition-all">
+                +
+              </button>
+            </div>
+            {(form.builder_config?.allowed_bases || []).length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {(form.builder_config.allowed_bases).map((b, i) => (
+                  <div key={i} className="flex items-center gap-1.5 bg-purple-900/40 border border-purple-700/40 rounded-full px-3 py-1.5">
+                    <span className="text-xs text-purple-200">{b}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAllowedBase(i)}
+                      className="w-4 h-4 bg-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white text-xs leading-none">
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <Field label="Posição na lista (número menor = aparece primeiro)">
         <input type="number" value={form.order_position} onChange={e => set('order_position', e.target.value)}
           min={0} className={inputCls} />
@@ -519,6 +589,7 @@ export default function MenuManager() {
         active:         form.active,
         order_position: parseInt(form.order_position) || 0,
         flavors:        form.flavors || [],
+        builder_config: form.builder_config || {},
       }
 
       if (editingProd) {

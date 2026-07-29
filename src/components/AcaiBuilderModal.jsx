@@ -3,10 +3,19 @@ import { fmt, getBasePrice } from '../utils/price'
 
 // addons = { massa: [...], calda: [...], acompanhamento: [...], extra: [...] }
 export default function AcaiBuilderModal({ product, addons = {}, onClose, onAdd }) {
-  const bases    = addons.massa          || []
-  const caldas   = addons.calda          || []
-  const toppings = addons.acompanhamento || []
-  const extras   = addons.extra          || []
+  const config       = product.builder_config || {}
+  const hasToppings  = config.has_toppings ?? true
+  const allowedBases = config.allowed_bases  || []
+
+  const globalBases = addons.massa          || []
+  const caldas      = addons.calda          || []
+  const toppings    = addons.acompanhamento || []
+  const extras      = addons.extra          || []
+
+  // Se o produto tem massas restritas, usa apenas elas; caso contrário usa as globais
+  const bases = allowedBases.length > 0
+    ? allowedBases.map(name => ({ key: name, label: name, price: 0 }))
+    : globalBases
 
   const [selectedBase,     setSelectedBase]     = useState(null)
   const [selectedCaldas,   setSelectedCaldas]   = useState([])
@@ -66,11 +75,13 @@ export default function AcaiBuilderModal({ product, addons = {}, onClose, onAdd 
 
   const completedSteps = [
     selectedBase !== null,
-    caldas.length > 0 && selectedCaldas.length > 0,
-    selectedToppings.length > 0,
-    extras.length > 0 && selectedExtras.length > 0,
+    hasToppings && caldas.length > 0 && selectedCaldas.length > 0,
+    hasToppings && selectedToppings.length > 0,
+    hasToppings && extras.length > 0 && selectedExtras.length > 0,
   ].filter(Boolean).length
-  const totalSections = 2 + (caldas.length > 0 ? 1 : 0) + (extras.length > 0 ? 1 : 0)
+  const totalSections = hasToppings
+    ? 2 + (caldas.length > 0 ? 1 : 0) + (extras.length > 0 ? 1 : 0)
+    : 1
   const progressPercent = (completedSteps / totalSections) * 100
 
   return (
@@ -155,8 +166,9 @@ export default function AcaiBuilderModal({ product, addons = {}, onClose, onAdd 
             )}
           </section>
 
+          {/* ── Passos 2-4: só exibidos se hasToppings === true ─ */}
           {/* ── Passo 2: Caldas (se houver) ───────────────────── */}
-          {caldas.length > 0 && (
+          {hasToppings && caldas.length > 0 && (
             <section>
               <StepHeader number={2} title="Caldas" subtitle="Opcional · Múltipla escolha" />
 
@@ -198,9 +210,9 @@ export default function AcaiBuilderModal({ product, addons = {}, onClose, onAdd 
           )}
 
           {/* ── Passo 3: Acompanhamentos Grátis ───────────────── */}
-          <section>
+          {hasToppings && <section>
             <div className="flex items-center gap-3 mb-4">
-              <StepBadge number={caldas.length > 0 ? 3 : 2} amber />
+              <StepBadge number={hasToppings && caldas.length > 0 ? 3 : 2} amber />
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-base font-bold text-white">Acompanhamentos</p>
@@ -281,13 +293,13 @@ export default function AcaiBuilderModal({ product, addons = {}, onClose, onAdd 
                 })}
               </div>
             )}
-          </section>
+          </section>}
 
           {/* ── Passo 4: Adicionais Extras (se houver) ────────── */}
-          {extras.length > 0 && (
+          {hasToppings && extras.length > 0 && (
             <section>
               <StepHeader
-                number={caldas.length > 0 ? 4 : 3}
+                number={caldas.length > 0 ? 4 : 3}  /* hasToppings já garante que este bloco renderiza */
                 title="Adicionais Extras"
                 subtitle="Múltipla escolha · Valores adicionais"
               />
