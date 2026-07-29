@@ -1,7 +1,47 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { fmt, getBasePrice } from '../utils/price'
 
-export default function Menu({ categories, byCategory, onSelectProduct }) {
+export default function Menu({ categories, byCategory, onSelectProduct, onCategoryChange }) {
+  const sectionRefs         = useRef({})
+  const onCategoryChangeRef = useRef(onCategoryChange)
+
+  // Mantém o ref atualizado sem recriar o observer a cada render
+  useEffect(() => { onCategoryChangeRef.current = onCategoryChange })
+
+  // IntersectionObserver — detecta qual seção está no "terço superior" da tela
+  useEffect(() => {
+    if (!categories.length) return
+
+    // Rastreia quais seções estão dentro da zona ativa em tempo real
+    const visible = new Set()
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) visible.add(e.target.dataset.catId)
+          else                   visible.delete(e.target.dataset.catId)
+        })
+
+        // Percorre categorias em ordem DOM e reporta a primeira visível (mais ao topo)
+        for (const cat of categories) {
+          if (visible.has(cat.id)) {
+            onCategoryChangeRef.current?.(cat.id)
+            break
+          }
+        }
+      },
+      {
+        // Corta 20% do topo (cobre header + tabs ~120px) e 70% da base
+        // → zona ativa ≈ terço superior da viewport, onde o título da seção entra
+        rootMargin: '-20% 0px -70% 0px',
+        threshold: 0,
+      },
+    )
+
+    Object.values(sectionRefs.current).forEach(el => { if (el) observer.observe(el) })
+    return () => observer.disconnect()
+  }, [categories])
+
   return (
     <div className="pb-32">
       {categories.map((cat, idx) => {
@@ -12,6 +52,7 @@ export default function Menu({ categories, byCategory, onSelectProduct }) {
           <section
             key={cat.id}
             data-cat-id={cat.id}
+            ref={el => { sectionRefs.current[cat.id] = el }}
             className={`px-4 ${idx === 0 ? 'pt-4' : 'pt-8'}`}
           >
             {/* Cabeçalho da categoria */}

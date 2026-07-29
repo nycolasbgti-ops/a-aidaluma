@@ -41,32 +41,12 @@ export default function App() {
     }
   }, [categories, activeCatId])
 
-  // ── Scroll Spy ────────────────────────────────────────────────
-  // Detecta qual seção de categoria está no topo do scroll e atualiza o tab ativo
-  useEffect(() => {
-    const root = scrollContainerRef.current
-    if (!root || !categories.length) return
-
-    const TRIGGER_OFFSET = 72 // px a partir do topo da <main> para ativar a seção
-
-    const handleScroll = () => {
-      if (isScrollingToSection.current) return
-
-      const rootRect = root.getBoundingClientRect()
-      const sections = root.querySelectorAll('[data-cat-id]')
-      let found = null
-
-      sections.forEach(el => {
-        const elTop = el.getBoundingClientRect().top - rootRect.top
-        if (elTop <= TRIGGER_OFFSET) found = el.dataset.catId
-      })
-
-      if (found) setActiveCatId(found)
-    }
-
-    root.addEventListener('scroll', handleScroll, { passive: true })
-    return () => root.removeEventListener('scroll', handleScroll)
-  }, [categories])
+  // ── Scroll Spy — callback chamado pelo IntersectionObserver em Menu.jsx ──
+  // O lock impede que o observer "brigue" com a rolagem acionada pelo clique no tab
+  const handleCategoryChange = useCallback((catId) => {
+    if (isScrollingToSection.current) return
+    setActiveCatId(catId)
+  }, [])
 
   // ── Clique em tab → rola para a seção ────────────────────────
   const handleTabChange = useCallback((catId) => {
@@ -154,7 +134,7 @@ export default function App() {
 
   // ── Menu principal ────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#07011A] text-white flex flex-col">
+    <div className="h-screen bg-[#07011A] text-white flex flex-col overflow-hidden">
       <Header
         cartCount={cartCount}
         cartTotal={cartTotal}
@@ -188,6 +168,7 @@ export default function App() {
               categories={categories}
               byCategory={byCategory}
               onSelectProduct={handleProductClick}
+              onCategoryChange={handleCategoryChange}
             />
           </main>
         </>

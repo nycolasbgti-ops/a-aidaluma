@@ -1,5 +1,19 @@
 import React, { useRef, useEffect } from 'react'
 
+function CategoryIcon({ icon, name }) {
+  const isUrl = icon && (icon.startsWith('http') || icon.startsWith('/'))
+  if (isUrl) {
+    return (
+      <img
+        src={icon}
+        alt={name}
+        className="w-5 h-5 object-contain flex-shrink-0"
+      />
+    )
+  }
+  return <span className="text-sm leading-none">{icon}</span>
+}
+
 export default function CategoryTabs({ categories, selected, onChange }) {
   const containerRef = useRef(null)
 
@@ -26,7 +40,7 @@ export default function CategoryTabs({ categories, selected, onChange }) {
                 : 'bg-purple-950/40 text-gray-400 border border-purple-800/20'}
             `}
           >
-            <span className="text-sm leading-none">{cat.icon}</span>
+            <CategoryIcon icon={cat.icon} name={cat.name} />
             <span>{cat.name}</span>
           </button>
         ))}
