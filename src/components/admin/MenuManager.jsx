@@ -82,9 +82,17 @@ function CategoryForm({ initial, onSave, onCancel, saving }) {
           placeholder="Ex: Pastéis, Porções" className={inputCls} />
       </Field>
 
-      <Field label="Ícone (emoji) *">
-        <input type="text" value={form.icon} onChange={e => set('icon', e.target.value)}
-          placeholder="🍕" className={`${inputCls} text-2xl text-center`} maxLength={4} />
+      <Field label="Ícone (Emoji ou URL da Imagem) *">
+        <div className="flex items-center gap-3">
+          <input type="text" value={form.icon} onChange={e => set('icon', e.target.value)}
+            placeholder="🍕 ou https://..." className={`${inputCls} flex-1`} />
+          <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-[#242424] rounded-xl">
+            {form.icon && (form.icon.startsWith('http') || form.icon.startsWith('/'))
+              ? <img src={form.icon} alt="preview" className="w-10 h-10 object-contain rounded" />
+              : <span className="text-2xl">{form.icon}</span>
+            }
+          </div>
+        </div>
       </Field>
 
       <Field label="Posição na barra (número menor = aparece primeiro)">
