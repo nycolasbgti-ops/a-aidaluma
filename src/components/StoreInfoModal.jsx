@@ -1,4 +1,5 @@
 import React from 'react'
+import logoImg from '../assets/logo.png'
 
 const HOURS = [
   { day: 'Segunda',  slots: ['13:00 - 17:30', '19:00 - 22:00'] },
@@ -19,7 +20,7 @@ export default function StoreInfoModal({ onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#100528] rounded-t-3xl pb-safe overflow-hidden animate-slide-up"
+        className="w-full max-w-lg bg-[#100528] rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
@@ -28,13 +29,13 @@ export default function StoreInfoModal({ onClose }) {
         </div>
 
         {/* Logo + nome */}
-        <div className="flex flex-col items-center pt-2 pb-5 px-6 border-b border-purple-800/30">
-          <span className="text-4xl mb-2">🍧</span>
+        <div className="flex flex-col items-center pt-4 pb-5 px-6 border-b border-purple-800/30">
+          <img src={logoImg} alt="Luma Açaí" className="w-16 h-16 object-contain mx-auto mb-2 rounded-xl" />
           <h2 className="text-xl font-bold text-white tracking-tight">Luma Açaí</h2>
           <p className="text-xs text-purple-400 mt-0.5">Santópolis do Aguapeí, SP</p>
         </div>
 
-        <div className="overflow-y-auto max-h-[70vh] px-6 py-4 space-y-5">
+        <div className="px-6 pt-4 pb-2 space-y-5">
 
           {/* WhatsApp */}
           <div className="flex items-center gap-3">
