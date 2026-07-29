@@ -55,6 +55,25 @@ app.post('/api/orders', async (req, res) => {
   }
 })
 
+// ── Público: Pedidos por telefone ─────────────────────────────
+
+app.get('/api/orders/by-phone', async (req, res) => {
+  try {
+    const phone = String(req.query.phone ?? '').replace(/\D/g, '')
+    if (phone.length < 8) return res.status(400).json({ error: 'Telefone inválido' })
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .ilike('customer_phone', `%${phone}%`)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    if (error) throw error
+    res.json(data)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // ── Admin: Listar pedidos ─────────────────────────────────────
 
 app.get('/api/orders', async (req, res) => {

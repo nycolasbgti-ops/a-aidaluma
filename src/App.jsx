@@ -8,6 +8,8 @@ import CartBottomSheet from './components/CartBottomSheet'
 import CheckoutView from './components/CheckoutView'
 import ConfirmationView from './components/ConfirmationView'
 import BottomNav from './components/BottomNav'
+import StoreInfoModal from './components/StoreInfoModal'
+import OrdersView from './components/OrdersView'
 import AdminLogin from './components/admin/AdminLogin'
 import AdminPanel from './components/admin/AdminPanel'
 import { ADMIN_PIN } from './data/menu'
@@ -22,6 +24,7 @@ export default function App() {
   const [cartOpen,       setCartOpen]      = useState(false)
   const [confirmedOrder, setConfirmedOrder] = useState(null)
   const [showAdminLogin, setAdminLogin]    = useState(false)
+  const [showStoreInfo,  setShowStoreInfo] = useState(false)
   const [navTab,         setNavTab]        = useState('home')
 
   // Refs para scroll spy
@@ -139,9 +142,12 @@ export default function App() {
         cartCount={cartCount}
         cartTotal={cartTotal}
         onCartClick={() => { setCartOpen(true); setNavTab('cart') }}
+        onInfoClick={() => setShowStoreInfo(true)}
       />
 
-      {loading ? (
+      {navTab === 'orders' ? (
+        <OrdersView />
+      ) : loading ? (
         <LoadingState />
       ) : categories.length === 0 ? (
         <ErrorState message={error} />
@@ -202,9 +208,11 @@ export default function App() {
         cartCount={cartCount}
         onHomeClick={() => setNavTab('home')}
         onCartClick={() => { setCartOpen(true); setNavTab('cart') }}
-        onProfileClick={() => setNavTab('profile')}
+        onOrdersClick={() => setNavTab('orders')}
         activeTab={navTab}
       />
+
+      {showStoreInfo && <StoreInfoModal onClose={() => setShowStoreInfo(false)} />}
 
       {showAdminLogin && (
         <AdminLogin onLogin={handleAdminLogin} onClose={() => setAdminLogin(false)} />

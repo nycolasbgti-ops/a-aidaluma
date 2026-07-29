@@ -1,0 +1,126 @@
+import React from 'react'
+
+const HOURS = [
+  { day: 'Segunda',  slots: ['13:00 - 17:30', '19:00 - 22:00'] },
+  { day: 'Terça',    slots: ['13:00 - 17:30', '19:00 - 22:30'] },
+  { day: 'Quarta',   slots: ['13:00 - 17:30', '18:00 - 22:30'] },
+  { day: 'Quinta',   slots: ['13:00 - 17:30', '19:00 - 22:30'] },
+  { day: 'Sexta',    slots: ['13:00 - 17:30', '19:00 - 22:30'] },
+  { day: 'Sábado',   slots: ['13:00 - 17:30', '19:00 - 22:30'] },
+  { day: 'Domingo',  slots: ['13:00 - 17:30', '19:00 - 22:30'] },
+]
+
+const MAPS_URL = 'https://www.google.com/maps/search/?api=1&query=Av+Ant%C3%B4nio+Francisco+dos+Santos+410+Sant%C3%B3polis+do+Aguape%C3%AD+SP'
+
+export default function StoreInfoModal({ onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg bg-[#100528] rounded-t-3xl pb-safe overflow-hidden animate-slide-up"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 bg-purple-700/50 rounded-full" />
+        </div>
+
+        {/* Logo + nome */}
+        <div className="flex flex-col items-center pt-2 pb-5 px-6 border-b border-purple-800/30">
+          <span className="text-4xl mb-2">🍧</span>
+          <h2 className="text-xl font-bold text-white tracking-tight">Luma Açaí</h2>
+          <p className="text-xs text-purple-400 mt-0.5">Santópolis do Aguapeí, SP</p>
+        </div>
+
+        <div className="overflow-y-auto max-h-[70vh] px-6 py-4 space-y-5">
+
+          {/* WhatsApp */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex-shrink-0 bg-green-500/15 rounded-2xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.528 5.845L.057 23.716a.5.5 0 00.61.637l6.037-1.583A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.815 9.815 0 01-5.012-1.374l-.36-.213-3.724.977.994-3.634-.234-.374A9.817 9.817 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500 mb-0.5">WhatsApp</p>
+              <a
+                href="https://wa.me/5518996919527"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-semibold text-green-400 active:opacity-70"
+              >
+                (18) 99691-9527
+              </a>
+            </div>
+          </div>
+
+          {/* Endereço */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex-shrink-0 bg-pink-500/15 rounded-2xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500 mb-0.5">Endereço</p>
+              <p className="text-sm text-white leading-snug">
+                Av. Antônio Francisco dos Santos, 410<br />
+                Centro, Santópolis do Aguapeí – SP
+              </p>
+              <a
+                href={MAPS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-pink-400 mt-1 inline-block active:opacity-70"
+              >
+                Abrir no Google Maps →
+              </a>
+            </div>
+          </div>
+
+          {/* Horários */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 flex-shrink-0 bg-purple-500/15 rounded-2xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-white">Horário de Funcionamento</p>
+            </div>
+            <div className="bg-[#1A0B2E] rounded-2xl overflow-hidden divide-y divide-purple-800/20">
+              {HOURS.map(({ day, slots }) => (
+                <div key={day} className="flex items-center justify-between px-4 py-2.5">
+                  <span className="text-xs text-gray-400 w-16 flex-shrink-0">{day}</span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    {slots.map(s => (
+                      <span key={s} className="text-xs font-medium text-white">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Fechar */}
+        <div className="px-6 pt-3 pb-6">
+          <button
+            onClick={onClose}
+            className="w-full py-3.5 bg-purple-900/50 rounded-2xl text-sm font-semibold text-gray-300 active:scale-95 transition-all"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
