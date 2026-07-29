@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useMenu } from './hooks/useMenu'
 import Header from './components/Header'
 import CategoryTabs from './components/CategoryTabs'
@@ -13,7 +13,7 @@ import AdminPanel from './components/admin/AdminPanel'
 import { ADMIN_PIN } from './data/menu'
 
 export default function App() {
-  const { categories, byCategory, loading, error } = useMenu()
+  const { categories, byCategory, freeToppings, extras, loading, error } = useMenu()
 
   const [view,           setView]          = useState('menu')
   const [cart,           setCart]          = useState([])
@@ -22,14 +22,16 @@ export default function App() {
   const [cartOpen,       setCartOpen]      = useState(false)
   const [confirmedOrder, setConfirmedOrder] = useState(null)
   const [showAdminLogin, setAdminLogin]    = useState(false)
-  const [adminAuthed,    setAdminAuthed]   = useState(false)
   const [navTab,         setNavTab]        = useState('home')
 
-  // Link secreto: ?admin na URL abre o login sem botão visível na interface
+  // Refs para scroll spy
+  const scrollContainerRef     = useRef(null)
+  const isScrollingToSection   = useRef(false)
+  const scrollTimeoutRef       = useRef(null)
+
+  // Link secreto: ?admin na URL abre o login
   useEffect(() => {
-    if (window.location.search.includes('admin')) {
-      setAdminLogin(true)
-    }
+    if (window.location.search.includes('admin')) setAdminLogin(true)
   }, [])
 
   // Seleciona a primeira categoria quando os dados chegam
@@ -39,17 +41,56 @@ export default function App() {
     }
   }, [categories, activeCatId])
 
-  const activeCategory = categories.find(c => c.id === activeCatId) ?? null
-  const shownProducts  = byCategory[activeCatId] ?? []
+  // ── Scroll Spy ────────────────────────────────────────────────
+  // Detecta qual seção de categoria está no topo do scroll e atualiza o tab ativo
+  useEffect(() => {
+    const root = scrollContainerRef.current
+    if (!root || !categories.length) return
+
+    const TRIGGER_OFFSET = 72 // px a partir do topo da <main> para ativar a seção
+
+    const handleScroll = () => {
+      if (isScrollingToSection.current) return
+
+      const rootRect = root.getBoundingClientRect()
+      const sections = root.querySelectorAll('[data-cat-id]')
+      let found = null
+
+      sections.forEach(el => {
+        const elTop = el.getBoundingClientRect().top - rootRect.top
+        if (elTop <= TRIGGER_OFFSET) found = el.dataset.catId
+      })
+
+      if (found) setActiveCatId(found)
+    }
+
+    root.addEventListener('scroll', handleScroll, { passive: true })
+    return () => root.removeEventListener('scroll', handleScroll)
+  }, [categories])
+
+  // ── Clique em tab → rola para a seção ────────────────────────
+  const handleTabChange = useCallback((catId) => {
+    isScrollingToSection.current = true
+    setActiveCatId(catId)
+
+    const root = scrollContainerRef.current
+    const section = root?.querySelector(`[data-cat-id="${catId}"]`)
+    if (root && section) {
+      root.scrollTo({ top: section.offsetTop - 8, behavior: 'smooth' })
+    }
+
+    clearTimeout(scrollTimeoutRef.current)
+    scrollTimeoutRef.current = setTimeout(() => {
+      isScrollingToSection.current = false
+    }, 1200)
+  }, [])
 
   // ── Cart ─────────────────────────────────────────────────────
   const addToCart = useCallback((item) => {
     setCart(prev => {
-      // Açaí montado: cada pedido é único (customização diferente)
       if (item.type === 'acai') {
         return [...prev, { ...item, cartId: Date.now() + Math.random() }]
       }
-      // Item simples: incrementa qty se já está no carrinho
       const existing = prev.find(i => i.id === item.id)
       if (existing) {
         return prev.map(i => i.cartId === existing.cartId ? { ...i, qty: (i.qty || 1) + 1 } : i)
@@ -74,9 +115,11 @@ export default function App() {
   const cartCount = cart.reduce((s, i) => s + (i.qty || 1), 0)
   const cartTotal = cart.reduce((s, i) => s + i.price * (i.qty || 1), 0)
 
-  // ── Handlers ─────────────────────────────────────────────────
+  // ── Clique em produto ─────────────────────────────────────────
+  // Verifica is_builder pela categoria do próprio produto (não pelo tab ativo)
   const handleProductClick = (product) => {
-    if (activeCategory?.is_builder) {
+    const productCat = categories.find(c => c.id === product.category_id) ?? null
+    if (productCat?.is_builder) {
       setBuilder({ open: true, product })
     } else {
       const price = Number(product.prices?.unique ?? product.price ?? 0)
@@ -86,9 +129,8 @@ export default function App() {
 
   const handleAdminLogin = (pin) => {
     if (pin === ADMIN_PIN) {
-      setAdminAuthed(true)
-      setAdminLogin(false)
       setView('admin')
+      setAdminLogin(false)
       return true
     }
     return false
@@ -102,9 +144,7 @@ export default function App() {
   }
 
   // ── Views ─────────────────────────────────────────────────────
-  if (view === 'admin') {
-    return <AdminPanel onBack={() => setView('menu')} />
-  }
+  if (view === 'admin') return <AdminPanel onBack={() => setView('menu')} />
   if (view === 'checkout') {
     return <CheckoutView cart={cart} total={cartTotal} onBack={() => setView('menu')} onConfirm={handleOrderConfirmed} />
   }
@@ -123,31 +163,42 @@ export default function App() {
 
       {loading ? (
         <LoadingState />
-      ) : error ? (
+      ) : categories.length === 0 ? (
         <ErrorState message={error} />
       ) : (
         <>
+          {/* Banner de modo demonstração */}
+          {error && (
+            <div className="px-4 py-2 text-xs text-center text-amber-400 bg-amber-500/10 border-b border-amber-500/20">
+              {error}
+            </div>
+          )}
+
           <CategoryTabs
             categories={categories}
             selected={activeCatId}
-            onChange={setActiveCatId}
+            onChange={handleTabChange}
           />
 
-          <main className="flex-1 overflow-y-auto">
+          <main
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto"
+          >
             <Menu
               categories={categories}
               byCategory={byCategory}
-              activeCatId={activeCatId}
               onSelectProduct={handleProductClick}
-              isBuilder={activeCategory?.is_builder}
             />
           </main>
         </>
       )}
 
+      {/* Modal de montagem do açaí */}
       {builder.open && (
         <AcaiBuilderModal
           product={builder.product}
+          toppings={freeToppings}
+          extras={extras}
           onClose={() => setBuilder({ open: false, product: null })}
           onAdd={(item) => {
             addToCart(item)
@@ -195,10 +246,11 @@ function ErrorState({ message }) {
     <div className="px-6 pt-24 text-center">
       <span className="text-5xl block mb-4">⚠️</span>
       <p className="text-gray-300 font-semibold mb-2">Não foi possível carregar o cardápio</p>
-      <p className="text-gray-600 text-xs font-mono bg-[#1A0B2E] rounded-xl px-4 py-3 mt-3 text-left break-all">
-        {message}
-      </p>
-      <p className="text-gray-600 text-sm mt-4">Verifique se a API está rodando em <code>VITE_API_URL</code>.</p>
+      {message && (
+        <p className="text-gray-600 text-xs font-mono bg-[#1A0B2E] rounded-xl px-4 py-3 mt-3 text-left break-all">
+          {message}
+        </p>
+      )}
     </div>
   )
 }
